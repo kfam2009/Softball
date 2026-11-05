@@ -13,6 +13,10 @@ echo Electron no esta instalado o quedo roto. Reinstalando (necesita internet, p
 if exist "node_modules" rmdir /s /q "node_modules"
 call npm install
 if not exist "node_modules\electron\dist\electron.exe" (
+  echo Descargando el programa de Electron...
+  node "node_modules\electron\install.js"
+)
+if not exist "node_modules\electron\dist\electron.exe" (
   echo.
   echo ERROR: no se pudo instalar Electron. Revisa la conexion a internet o el antivirus y volve a intentar.
   pause
