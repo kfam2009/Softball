@@ -31,10 +31,19 @@ El scoreboard muestra las **entradas reglamentarias** (7 por defecto; 5 para inf
 ## Excel
 `C:\Users\claud\Videos\Softball2026\Datos.xlsx` (cambiar con la variable `SB_EXCEL`). Hojas **HOME**, **AWAY** y **UMPIRES**, columnas A/B/C: número, nombre, posición (o rol). Ver `Datos-ejemplo.xlsx`. Después de guardar, **Sync Excel** en el panel.
 
-## Arranque en Windows
-1. `npm install` (o copiar `node_modules` de Baseball5 y correr `REPARAR_DEPENDENCIAS.cmd`).
-2. `ARRANCAR SOFTBALL.cmd` (en la carpeta que contiene `softball-ndi`, ver `launchers/`) o `scripts\START_NDI_SCOREBUG.cmd`.
-3. Para cerrar: `PARAR SOFTBALL.cmd` o `scripts\STOP_NDI_SCOREBUG.cmd`.
+## Instalar en otra PC
+1. Instalar **Node.js** (nodejs.org) y **Python** (python.org, tildar "Add to PATH"). NDI Tools es opcional (para probar con NDI Studio Monitor).
+2. Crear una carpeta, por ejemplo `Videos\Softball2026`, y adentro clonar o descargar el repo con el nombre **`softball-ndi`**:
+   `git clone https://github.com/kfam2009/Softball.git softball-ndi`
+   (o "Code > Download ZIP" y renombrar la carpeta a `softball-ndi`; el nombre importa para el script de parar).
+3. Doble clic en `softball-ndi\INSTALAR.cmd`: instala Electron/NDI, openpyxl, y copia `ARRANCAR SOFTBALL.cmd`, `PARAR SOFTBALL.cmd` y un `Datos.xlsx` de ejemplo a la carpeta de arriba.
+4. Arrancar con `ARRANCAR SOFTBALL.cmd`. En vMix agregar el input NDI "<NOMBRE-PC> (B5 Scorebug)" y ponerlo en un Overlay.
+
+El Excel se busca en la carpeta que contiene `softball-ndi` (`..\Datos.xlsx`), así que no depende del usuario de Windows.
+
+## Arranque
+- `ARRANCAR SOFTBALL.cmd` (o `scripts\START_NDI_SCOREBUG.cmd`). Panel en `http://localhost:8136/control.html`.
+- Para cerrar: `PARAR SOFTBALL.cmd` o `scripts\STOP_NDI_SCOREBUG.cmd`.
 
 ## Stream Deck
 Acciones `.vbs` en `scripts/streamdeck` (Ball, Strike, Foul, Conteo, Out, Cambio de lado, Carrera, Hit, Error, bases, entrada). Atajos globales en `public/streamdeck.html`.

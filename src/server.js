@@ -7,7 +7,8 @@ const root = path.resolve(__dirname, "..");
 const publicRoot = path.join(root, "public");
 const dataRoot = path.join(root, "data");
 const statePath = path.join(dataRoot, "state.json");
-const excelPath = process.env.SB_EXCEL || "C:\\Users\\claud\\Videos\\Softball2026\\Datos.xlsx";
+// Datos.xlsx va en la carpeta que contiene softball-ndi (ej: Videos\\Softball2026\\Datos.xlsx).
+const excelPath = process.env.SB_EXCEL || path.resolve(root, "..", "Datos.xlsx");
 const codexPython = "C:\\Users\\claud\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe";
 const pythonPath = process.env.PYTHON || (fs.existsSync(codexPython) ? codexPython : "python");
 const replayPanelRoot = process.env.REPLAY_PANEL_ROOT || "C:\\Users\\claud\\Videos\\Panel Replay";
