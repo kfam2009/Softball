@@ -29,7 +29,7 @@ La **Defensa** dibuja la cancha con cada jugador en su posición (el DP no apare
 El scoreboard muestra las **entradas reglamentarias** (7 por defecto; 5 para infantiles, se cambia en el panel) y agrega columnas si hay extra innings, con totales **R H E**.
 
 ## Excel
-`C:\Users\claud\Videos\Softball2026\Datos.xlsx` (cambiar con la variable `SB_EXCEL`). Hojas **HOME**, **AWAY** y **UMPIRES**, columnas A/B/C: número, nombre, posición (o rol). Ver `Datos-ejemplo.xlsx`. Después de guardar, **Sync Excel** en el panel.
+`Datos.xlsx` en la carpeta que contiene `softball-ndi` (o la ruta de la variable `SB_EXCEL`). Hojas **HOME**, **AWAY** y **UMPIRES**, columnas A/B/C: número, nombre, posición (o rol). Ver `Datos-ejemplo.xlsx`. Después de guardar, **Sync Excel** en el panel.
 
 ## Instalar en otra PC
 1. Instalar **Node.js** (nodejs.org) y **Python** (python.org, tildar "Add to PATH"). NDI Tools es opcional (para probar con NDI Studio Monitor).
