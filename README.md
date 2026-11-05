@@ -32,14 +32,14 @@ El scoreboard muestra las **entradas reglamentarias** (7 por defecto; 5 para inf
 `Datos.xlsx` en la carpeta que contiene `softball-ndi` (o la ruta de la variable `SB_EXCEL`). Hojas **HOME**, **AWAY** y **UMPIRES**, columnas A/B/C: número, nombre, posición (o rol). Ver `Datos-ejemplo.xlsx`. Después de guardar, **Sync Excel** en el panel.
 
 ## Instalar en otra PC
-1. Instalar **Node.js** (nodejs.org) y **Python** (python.org, tildar "Add to PATH"). NDI Tools es opcional (para probar con NDI Studio Monitor).
-2. Crear una carpeta, por ejemplo `Videos\Softball2026`, y adentro clonar o descargar el repo con el nombre **`softball-ndi`**:
-   `git clone https://github.com/kfam2009/Softball.git softball-ndi`
-   (o "Code > Download ZIP" y renombrar la carpeta a `softball-ndi`; el nombre importa para el script de parar).
-3. Doble clic en `softball-ndi\INSTALAR.cmd`: instala Electron/NDI, openpyxl, y copia `ARRANCAR SOFTBALL.cmd`, `PARAR SOFTBALL.cmd` y un `Datos.xlsx` de ejemplo a la carpeta de arriba.
-4. Arrancar con `ARRANCAR SOFTBALL.cmd`. En vMix agregar el input NDI "<NOMBRE-PC> (B5 Scorebug)" y ponerlo en un Overlay.
+1. Instalar **Node.js** (nodejs.org) y **Python** (python.org, tildar "Add to PATH").
+2. Bajar el repo (git clone o "Code > Download ZIP") en cualquier carpeta, por ejemplo `Videos\Softball2026\softball-ndi`.
+3. Doble clic en **`INSTALAR.cmd`** (instala Electron/NDI y openpyxl, y crea un `Datos.xlsx` de ejemplo).
+4. Clic derecho en **`ABRIR_FIREWALL.cmd`** > Ejecutar como administrador (para el celular).
+5. Arrancar con **`ARRANCAR SOFTBALL.cmd`** y cerrar con **`PARAR SOFTBALL.cmd`** (los dos dentro de la carpeta del panel).
+6. En vMix: input NDI "<NOMBRE-PC> (B5 Scorebug)" en un Overlay.
 
-El Excel se busca en la carpeta que contiene `softball-ndi` (`..\Datos.xlsx`), así que no depende del usuario de Windows.
+El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro de la carpeta del panel.
 
 ## Arranque
 - `ARRANCAR SOFTBALL.cmd` (o `scripts\START_NDI_SCOREBUG.cmd`). Panel en `http://localhost:8136/control.html`.

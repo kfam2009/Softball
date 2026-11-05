@@ -4,3 +4,4 @@ outputs/
 scripts/streamdeck/shortcuts/
 scripts/streamdeck/shortcuts-exe/
 *.log
+/Datos.xlsx
