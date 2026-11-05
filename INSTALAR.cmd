@@ -4,6 +4,7 @@ cd /d "%~dp0"
 echo === Panel GO Softball - instalacion ===
 where node >nul 2>nul || (echo Falta Node.js. Instalalo desde https://nodejs.org y volve a correr este archivo. & pause & exit /b 1)
 echo Instalando Electron y NDI (npm install)...
+if exist "node_modules\.pnpm" (echo Borrando node_modules copiado de otra PC... & rmdir /s /q "node_modules")
 call npm install
 if errorlevel 1 (echo ERROR en npm install. & pause & exit /b 1)
 where python >nul 2>nul && (echo Instalando openpyxl para leer el Excel... & python -m pip install --user openpyxl) || echo AVISO: no encontre Python. Sin Python no funciona "Sync Excel". Instalalo desde https://python.org
