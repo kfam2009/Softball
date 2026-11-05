@@ -621,6 +621,12 @@ fields.forEach(field => {
   });
 });
 
+fetch("/api/network").then(r => r.json()).then(data => {
+  const el = document.getElementById("mobile-link");
+  if (!el || !data.addresses?.length) return;
+  el.innerHTML = "Celular: " + data.addresses.map(a => `<b>http://${a.address}:${data.port}/m</b>`).join(" o ");
+}).catch(() => {});
+
 load()
   .then(connectStateEvents)
   .catch(error => setStatus(error.message, true));

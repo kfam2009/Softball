@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#10151b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Softball - Scorebug</title>
+  <style>
+    :root {
+      --ink: #10151b;
+      --panel: #1b2630;
+      --line: rgba(255, 255, 255, .1);
+      --text: #f7f3ea;
+      --muted: #9aa7b2;
+      --gold: #ffc83d;
+      --teal: #00a78e;
+      --green: #2e9d4a;
+      --red: #d93a3a;
+      --coral: #ff4f5e;
+      --gray: #3a4652;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; background: var(--ink); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    body { padding: max(10px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom)); touch-action: manipulation; user-select: none; }
+    main { max-width: 520px; margin: 0 auto; display: grid; gap: 10px; }
+
+    .board { background: var(--panel); border-radius: 14px; padding: 12px; display: grid; gap: 10px; border: 1px solid var(--line); }
+    .score-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+    .team { display: grid; justify-items: center; gap: 2px; padding: 6px; border-radius: 10px; }
+    .team.batting { background: rgba(255, 200, 61, .12); box-shadow: inset 0 0 0 2px rgba(255, 200, 61, .55); }
+    .team b { font-size: 15px; letter-spacing: .5px; color: var(--muted); }
+    .team strong { font-size: 44px; line-height: 1; font-weight: 900; }
+    .inning { display: grid; justify-items: center; gap: 4px; min-width: 64px; padding: 8px 10px; border-radius: 10px; background: var(--gold); color: var(--ink); }
+    .inning i { width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; }
+    .inning i.top { border-bottom: 13px solid var(--ink); }
+    .inning i.bottom { border-top: 13px solid var(--ink); }
+    .inning strong { font-size: 30px; line-height: 1; font-weight: 900; }
+
+    .status-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+    .count { font-size: 34px; font-weight: 900; letter-spacing: 1px; }
+    .count small { display: block; font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+    .outs { justify-self: end; display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); font-weight: 800; }
+    .outs span { width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--text); }
+    .outs span.on { background: var(--coral); border-color: var(--coral); }
+    .diamond { position: relative; width: 96px; height: 64px; }
+    .diamond button { position: absolute; width: 30px; height: 30px; padding: 0; transform: rotate(45deg); border: 3px solid var(--text); background: rgba(255, 255, 255, .06); border-radius: 3px; }
+    .diamond button.on { background: var(--gold); border-color: var(--gold); }
+    .diamond .b1 { right: 6px; top: 26px; }
+    .diamond .b2 { left: 33px; top: 2px; }
+    .diamond .b3 { left: 6px; top: 26px; }
+
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .btn { min-height: 68px; border: 0; border-radius: 12px; background: var(--gray); color: #fff; font-size: 17px; font-weight: 900; text-transform: uppercase; letter-spacing: .3px; }
+    .btn:active { transform: scale(.96); filter: brightness(1.2); }
+    .btn small { display: block; font-size: 10px; font-weight: 700; opacity: .8; text-transform: none; }
+    .ball { background: var(--green); }
+    .strike { background: var(--red); }
+    .out { background: #26323c; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .25); }
+    .run { background: var(--teal); }
+    .side { background: var(--gold); color: var(--ink); }
+    .undo { background: #5a4a8a; }
+
+    .onair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .onair .btn { min-height: 60px; }
+    .in { background: var(--teal); }
+    .in.live { box-shadow: 0 0 0 3px #fff inset, 0 0 18px rgba(0, 167, 142, .8); }
+    .off { background: var(--coral); }
+
+    details { background: var(--panel); border-radius: 12px; border: 1px solid var(--line); }
+    summary { padding: 14px; font-weight: 800; color: var(--muted); list-style: none; }
+    summary::-webkit-details-marker { display: none; }
+    details .grid { padding: 0 10px 12px; grid-template-columns: repeat(4, 1fr); }
+    details .btn { min-height: 52px; font-size: 14px; }
+
+    .msg { min-height: 18px; text-align: center; font-size: 13px; color: var(--muted); }
+    .msg.error { color: var(--coral); }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--coral); margin-right: 6px; }
+    .dot.ok { background: #3ddc84; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="board">
+      <div class="score-row">
+        <div class="team" id="away"><b id="away-short">VIS</b><strong id="away-score">0</strong></div>
+        <div class="inning"><i id="half" class="top"></i><strong id="inning">1</strong></div>
+        <div class="team" id="home"><b id="home-short">LOC</b><strong id="home-score">0</strong></div>
+      </div>
+      <div class="status-row">
+        <div class="count"><small>CONTEO</small><span id="count">0-0</span></div>
+        <div class="diamond">
+          <button class="b2" data-action="base-second" aria-label="Segunda"></button>
+          <button class="b3" data-action="base-third" aria-label="Tercera"></button>
+          <button class="b1" data-action="base-first" aria-label="Primera"></button>
+        </div>
+        <div class="outs">OUT <span id="out1"></span><span id="out2"></span></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <button class="btn ball" data-action="ball-plus">Ball<small>4ta = base x bolas</small></button>
+      <button class="btn strike" data-action="strike-plus">Strike<small>3ro = out</small></button>
+      <button class="btn" data-action="foul">Foul</button>
+      <button class="btn out" data-action="out-plus">Out<small>3ro = cambio</small></button>
+      <button class="btn run" data-action="run-plus">Carrera<small id="run-team">al que batea</small></button>
+      <button class="btn" data-action="hit-plus">Hit</button>
+      <button class="btn" data-action="walk">B. x bolas<small>/ golpeado</small></button>
+      <button class="btn" data-action="count-reset">Conteo 0-0</button>
+      <button class="btn" data-action="error-plus">Error<small>al que defiende</small></button>
+      <button class="btn side" data-action="change-side">Cambio de lado</button>
+      <button class="btn" data-action="bases-clear">Limpiar bases</button>
+      <button class="btn undo" data-action="undo">Deshacer</button>
+    </section>
+
+    <section class="onair">
+      <button class="btn in" id="sb-in" data-action="scorebug-in">Scorebug In</button>
+      <button class="btn off" data-action="scorebug-out">Scorebug Out</button>
+    </section>
+
+    <details>
+      <summary>Correcciones ▾</summary>
+      <div class="grid">
+        <button class="btn" data-action="away-minus">Vis −</button>
+        <button class="btn" data-action="away-plus">Vis +</button>
+        <button class="btn" data-action="home-minus">Loc −</button>
+        <button class="btn" data-action="home-plus">Loc +</button>
+        <button class="btn" data-action="ball-minus">Ball −</button>
+        <button class="btn" data-action="strike-minus">Strike −</button>
+        <button class="btn" data-action="out-minus">Out −</button>
+        <button class="btn" data-action="half-toggle">Top/Bot</button>
+        <button class="btn" data-action="inning-minus">Inn −</button>
+        <button class="btn" data-action="inning-plus">Inn +</button>
+        <button class="btn" data-action="hit-minus">Hit −</button>
+        <button class="btn" data-action="error-minus">Error −</button>
+      </div>
+    </details>
+
+    <div class="msg" id="msg"><span class="dot" id="dot"></span>Conectando…</div>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let busy = false;
+
+    function render(state) {
+      const m = state.match;
+      const away = m.teams.away;
+      const home = m.teams.home;
+      $("away-short").textContent = away.short || "VIS";
+      $("home-short").textContent = home.short || "LOC";
+      $("away-score").textContent = away.score ?? 0;
+      $("home-score").textContent = home.score ?? 0;
+      $("inning").textContent = m.inning;
+      $("half").className = m.half === "BOTTOM" ? "bottom" : "top";
+      $("count").textContent = `${m.balls || 0}-${m.strikes || 0}`;
+      $("out1").classList.toggle("on", m.outs >= 1);
+      $("out2").classList.toggle("on", m.outs >= 2);
+      const bottom = m.half === "BOTTOM";
+      $("away").classList.toggle("batting", !bottom);
+      $("home").classList.toggle("batting", bottom);
+      $("run-team").textContent = `para ${(bottom ? home.short : away.short) || "el que batea"}`;
+      document.querySelector(".b1").classList.toggle("on", !!m.bases?.first);
+      document.querySelector(".b2").classList.toggle("on", !!m.bases?.second);
+      document.querySelector(".b3").classList.toggle("on", !!m.bases?.third);
+      $("sb-in").classList.toggle("live", !!state.ndi?.scorebugVisible);
+    }
+
+    function setMsg(text, error = false, connected = true) {
+      $("msg").className = `msg ${error ? "error" : ""}`;
+      $("msg").innerHTML = `<span class="dot ${connected ? "ok" : ""}"></span>${text}`;
+    }
+
+    async function send(action) {
+      if (busy) return;
+      busy = true;
+      try {
+        navigator.vibrate?.(15);
+        const response = await fetch(`/api/scorebug/${action}`, { method: "POST", cache: "no-store" });
+        const payload = await response.json();
+        if (!payload.ok) throw new Error(payload.error || "Error");
+        render(payload.state);
+        setMsg(action === "undo" ? "Deshecho" : "OK");
+      } catch (error) {
+        setMsg(error.message, true);
+      } finally {
+        busy = false;
+      }
+    }
+
+    document.querySelectorAll("[data-action]").forEach(button => {
+      button.addEventListener("click", () => send(button.dataset.action));
+    });
+
+    async function load() {
+      const state = await fetch("/api/state", { cache: "no-store" }).then(r => r.json());
+      render(state);
+    }
+
+    function connect() {
+      const source = new EventSource("/events");
+      source.onopen = () => setMsg("Conectado");
+      source.onmessage = event => render(JSON.parse(event.data));
+      source.onerror = () => {
+        setMsg("Sin conexión con la PC… reintentando", true, false);
+        source.close();
+        setTimeout(connect, 2000);
+      };
+    }
+
+    load().then(connect).catch(() => { setMsg("No conecta con la PC", true, false); setTimeout(() => location.reload(), 3000); });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) load().catch(() => {}); });
+  </script>
+</body>
+</html>

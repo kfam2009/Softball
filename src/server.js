@@ -2,6 +2,7 @@ const http = require("http");
 const childProcess = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 
 const root = path.resolve(__dirname, "..");
 const publicRoot = path.join(root, "public");
@@ -135,6 +136,18 @@ function sendJson(res, data, status = 200) {
 function broadcast(state) {
   const payload = `data: ${JSON.stringify(state)}\n\n`;
   for (const res of clients) res.write(payload);
+}
+
+const undoStack = [];
+
+function lanAddresses() {
+  const list = [];
+  for (const [name, entries] of Object.entries(os.networkInterfaces())) {
+    for (const entry of entries || []) {
+      if (entry.family === "IPv4" && !entry.internal) list.push({ name, address: entry.address });
+    }
+  }
+  return list;
 }
 
 function safeFile(urlPath) {
@@ -473,10 +486,31 @@ function createServer() {
       return openReplayPanel(res);
     }
 
+    if (req.method === "GET" && url.pathname === "/api/network") {
+      return sendJson(res, { ok: true, port: Number(req.socket.localPort), addresses: lanAddresses() });
+    }
+
+    if (req.method === "GET" && (url.pathname === "/m" || url.pathname === "/movil")) {
+      res.writeHead(302, { Location: "/mobile.html" });
+      res.end();
+      return;
+    }
+
     if ((req.method === "GET" || req.method === "POST") && url.pathname.startsWith("/api/scorebug/")) {
       try {
         const action = decodeURIComponent(url.pathname.slice("/api/scorebug/".length));
-        const state = applyScorebugAction(readState(), action);
+        let state;
+        if (action === "undo") {
+          const previous = undoStack.pop();
+          if (!previous) throw new Error("Nada para deshacer.");
+          state = normalizeState(JSON.parse(previous));
+        } else {
+          const current = readState();
+          const snapshot = JSON.stringify(current);
+          state = applyScorebugAction(current, action);
+          undoStack.push(snapshot);
+          if (undoStack.length > 30) undoStack.shift();
+        }
         writeState(state);
         broadcast(state);
         sendJson(res, { ok: true, action, state });

@@ -2164,3 +2164,13 @@ textarea {
 .lineup-slot select {
   height: 36px;
 }
+
+.mobile-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: #10151b;
+}
+
+.mobile-link b {
+  user-select: all;
+}
