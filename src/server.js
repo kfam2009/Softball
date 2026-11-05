@@ -140,6 +140,24 @@ function broadcast(state) {
 
 const undoStack = [];
 
+function qrSvg(text) {
+  const QRCode = require("./vendor/QRCode");
+  const QRErrorCorrectLevel = require("./vendor/QRCode/QRErrorCorrectLevel");
+  const qr = new QRCode(-1, QRErrorCorrectLevel.M);
+  qr.addData(text);
+  qr.make();
+  const size = qr.getModuleCount();
+  const quiet = 3;
+  let cells = "";
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
+      if (qr.isDark(row, col)) cells += `M${col + quiet} ${row + quiet}h1v1h-1z`;
+    }
+  }
+  const total = size + quiet * 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="${cells}" fill="#000"/></svg>`;
+}
+
 function lanAddresses() {
   const list = [];
   for (const [name, entries] of Object.entries(os.networkInterfaces())) {
@@ -487,7 +505,19 @@ function createServer() {
     }
 
     if (req.method === "GET" && url.pathname === "/api/network") {
-      return sendJson(res, { ok: true, port: Number(req.socket.localPort), addresses: lanAddresses() });
+      return sendJson(res, { ok: true, host: os.hostname(), port: Number(req.socket.localPort), addresses: lanAddresses() });
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/qr.svg") {
+      try {
+        const svg = qrSvg(String(url.searchParams.get("text") || "").slice(0, 200));
+        res.writeHead(200, { "Content-Type": "image/svg+xml", "Cache-Control": "no-store" });
+        res.end(svg);
+      } catch (error) {
+        res.writeHead(400);
+        res.end(error.message);
+      }
+      return;
     }
 
     if (req.method === "GET" && (url.pathname === "/m" || url.pathname === "/movil")) {

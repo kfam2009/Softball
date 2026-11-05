@@ -2174,3 +2174,50 @@ textarea {
 .mobile-link b {
   user-select: all;
 }
+
+.mobile-qr-btn {
+  margin: 0 4px;
+  padding: 4px 8px;
+  border: 1px solid rgba(16, 21, 27, .25);
+  border-radius: 6px;
+  background: #fff;
+  color: #10151b;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mobile-qr-btn small {
+  color: #00a78e;
+  font-weight: 900;
+}
+
+.qr-box {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, .7);
+}
+
+.qr-card {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 22px;
+  border-radius: 14px;
+  background: #fff;
+  color: #10151b;
+  font-weight: 800;
+}
+
+.qr-card img {
+  width: 300px;
+  height: 300px;
+  image-rendering: pixelated;
+}
+
+.qr-card span {
+  font-size: 13px;
+  font-weight: 600;
+}

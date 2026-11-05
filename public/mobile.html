@@ -26,6 +26,8 @@
     body { padding: max(10px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom)); touch-action: manipulation; user-select: none; }
     main { max-width: 520px; margin: 0 auto; display: grid; gap: 10px; }
 
+    .pc { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); font-weight: 700; }
+    .pc b { padding: 4px 10px; border-radius: 999px; background: var(--gold); color: var(--ink); font-size: 14px; }
     .board { background: var(--panel); border-radius: 14px; padding: 12px; display: grid; gap: 10px; border: 1px solid var(--line); }
     .score-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
     .team { display: grid; justify-items: center; gap: 2px; padding: 6px; border-radius: 10px; }
@@ -82,6 +84,7 @@
 </head>
 <body>
   <main>
+    <header class="pc"><span>Softball · Scorebug</span><b id="pc-name">PC</b></header>
     <section class="board">
       <div class="score-row">
         <div class="team" id="away"><b id="away-short">VIS</b><strong id="away-score">0</strong></div>
@@ -208,6 +211,11 @@
         setTimeout(connect, 2000);
       };
     }
+
+    fetch("/api/network").then(r => r.json()).then(data => {
+      $("pc-name").textContent = data.host || "PC";
+      document.title = `Scorebug · ${data.host || "PC"}`;
+    }).catch(() => {});
 
     load().then(connect).catch(() => { setMsg("No conecta con la PC", true, false); setTimeout(() => location.reload(), 3000); });
     document.addEventListener("visibilitychange", () => { if (!document.hidden) load().catch(() => {}); });

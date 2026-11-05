@@ -621,10 +621,28 @@ fields.forEach(field => {
   });
 });
 
+function showQr(link) {
+  let box = document.getElementById("qr-box");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "qr-box";
+    box.className = "qr-box";
+    box.addEventListener("click", () => box.remove());
+    document.body.appendChild(box);
+  }
+  box.innerHTML = `<div class="qr-card"><img src="/api/qr.svg?text=${encodeURIComponent(link)}" alt="QR"><b>${link}</b><span>Escanealo con el celular (tocá para cerrar)</span></div>`;
+}
+
 fetch("/api/network").then(r => r.json()).then(data => {
   const el = document.getElementById("mobile-link");
   if (!el || !data.addresses?.length) return;
-  el.innerHTML = "Celular: " + data.addresses.map(a => `<b>http://${a.address}:${data.port}/m</b>`).join(" o ");
+  const sorted = [...data.addresses].sort((a, b) => Number(/zerotier/i.test(b.name)) - Number(/zerotier/i.test(a.name)));
+  el.innerHTML = `<span>Celular (${data.host}):</span> ` + sorted.map(a => {
+    const link = `http://${a.address}:${data.port}/m`;
+    const tag = /zerotier/i.test(a.name) ? "ZeroTier" : a.name;
+    return `<button type="button" class="mobile-qr-btn" data-link="${link}" title="${tag}"><b>${link}</b> <small>${tag}</small></button>`;
+  }).join(" ");
+  el.querySelectorAll(".mobile-qr-btn").forEach(button => button.addEventListener("click", () => showQr(button.dataset.link)));
 }).catch(() => {});
 
 load()
