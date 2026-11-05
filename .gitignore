@@ -1,0 +1,6 @@
+node_modules/
+work/
+outputs/
+scripts/streamdeck/shortcuts/
+scripts/streamdeck/shortcuts-exe/
+*.log

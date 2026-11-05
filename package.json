@@ -1,0 +1,22 @@
+{
+  "name": "softball-ndi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MVP independiente para emitir graficos HTML de Softball como fuentes NDI.",
+  "main": "src/electron-main.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "panel": "node src/server.js",
+    "control:kiosk": "electron src/panel-main.js",
+    "ndi:preview": "electron .",
+    "ndi": "set B5_NDI_ENABLED=1&& electron .",
+    "ndi:test": "node scripts/ndi-test-pattern.mjs",
+    "check": "node src/server.js --check"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0"
+  },
+  "dependencies": {
+    "grandi": "^2.0.0"
+  }
+}

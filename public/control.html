@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Softball Graphics Control</title>
+  <link rel="stylesheet" href="assets/scorebug.css?v=20261105-softball">
+</head>
+<body class="control-body">
+  <main class="control-shell">
+    <header class="control-header">
+      <div class="brand-block">
+        <img class="panel-logo panel-go-logo" src="assets/old-assets/panel-go-logo.png" alt="Panel GO">
+        <div>
+          <h1>Softball</h1>
+          <p>Graphics control</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn secondary replay-link" id="open-replay-panel" type="button">Replay</button>
+        <button class="btn secondary" id="open-render" type="button">Monitor</button>
+        <button class="btn secondary kiosk-control" data-window-action="prev" type="button">Monitor -</button>
+        <button class="btn secondary kiosk-control" data-window-action="next" type="button">Monitor +</button>
+        <button class="btn secondary kiosk-control" data-window-action="fullscreen" type="button">Full</button>
+        <button class="btn danger kiosk-control" data-window-action="close" type="button">Close</button>
+        <button class="btn secondary" id="import-excel-global" title="Read rosters, umpires and player lists from Datos.xlsx">Sync Excel</button>
+        <button class="btn secondary" id="reload" title="Load the last saved panel data again">Load Saved</button>
+        <button class="btn" id="save" title="Save panel changes and update the browser graphics">Save Changes</button>
+      </div>
+    </header>
+
+    <section class="preview-monitor" id="preview-monitor" hidden>
+      <header class="preview-monitor-head">
+        <strong id="preview-monitor-title">Preview</strong>
+        <button type="button" class="preview-close" id="preview-close" title="Close preview">X</button>
+      </header>
+      <iframe id="preview-frame" title="NDI render preview"></iframe>
+    </section>
+
+    <nav class="tabs" aria-label="Graphics">
+      <button class="tab-btn active" data-tab="scorebug">Scorebug</button>
+      <button class="tab-btn" data-tab="scoreboard">Scoreboard</button>
+      <button class="tab-btn" data-tab="matchup">Matchup</button>
+      <button class="tab-btn" data-tab="rosters">Rosters</button>
+      <button class="tab-btn" data-tab="umpires">Umpires</button>
+      <button class="tab-btn" data-tab="player">Player</button>
+      <button class="tab-btn" data-tab="commentators">Commentators</button>
+      <button class="tab-btn" data-tab="upcoming">Upcoming</button>
+    </nav>
+
+    <section class="card wide system-card">
+      <div class="system-row">
+        <div class="status" id="status">Ready.</div>
+        <label>NDI source
+          <input data-path="ndi.sourceName">
+        </label>
+      </div>
+      <details class="system-details">
+        <summary>NDI setup</summary>
+        <div class="form-grid compact-grid">
+          <label>Active graphic
+            <select data-path="ndi.activeGraphic">
+              <option value="scorebug">Scorebug</option>
+              <option value="scoreboard">Scoreboard</option>
+              <option value="matchup">Matchup</option>
+              <option value="rosterAway">Away Roster</option>
+              <option value="rosterHome">Home Roster</option>
+              <option value="umpires">Umpires</option>
+              <option value="player">Player</option>
+              <option value="commentators">Commentators</option>
+              <option value="upcoming">Upcoming</option>
+            </select>
+          </label>
+          <label>Visible
+            <select data-path="ndi.visible">
+              <option value="true">On</option>
+              <option value="false">Off</option>
+            </select>
+          </label>
+        </div>
+      </details>
+    </section>
+
+    <section class="tab-panel active" data-panel="scorebug">
+      <section class="card wide">
+        <h2>Scorebug vMix Setup</h2>
+        <div class="url-box" data-url="scorebug"></div>
+        <div class="form-grid" style="margin-top:12px">
+          <label>Scorebug input # <input data-path="vmix.input" placeholder="Example: 8"></label>
+        </div>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn" data-overlay-in="scorebug">In</button>
+          <button class="btn danger" data-overlay-out="scorebug">Out</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-panel="scoreboard">
+      <section class="card wide">
+        <h2>Scoreboard vMix Setup</h2>
+        <div class="url-box" data-url="scoreboard"></div>
+        <div class="form-grid" style="margin-top:12px">
+          <label>Scoreboard input # <input data-path="vmix.scoreboardInput" placeholder="Example: 9"></label>
+          <label>Scoreboard title <input data-path="scoreboard.title"></label>
+          <label>Scoreboard subtitle <input data-path="scoreboard.subtitle"></label>
+        </div>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn" data-overlay-in="scoreboard">In</button>
+          <button class="btn danger" data-overlay-out="scoreboard">Out</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-panel="matchup">
+      <section class="card wide">
+        <h2>Matchup vMix Setup</h2>
+        <div class="url-box" data-url="matchup"></div>
+        <div class="form-grid" style="margin-top:12px">
+          <label>Matchup input # <input data-path="vmix.matchupInput" placeholder="Example: 10"></label>
+          <label>Matchup title <input data-path="matchup.title"></label>
+          <label>Matchup subtitle <input data-path="matchup.subtitle"></label>
+          <label>Title size <input data-path="matchup.titleScale" type="number" min="0.75" max="1.2" step="0.05"></label>
+          <label>Round <input data-path="matchup.round"></label>
+          <label>Venue <input data-path="matchup.venue"></label>
+        </div>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn" data-overlay-in="matchup">In</button>
+          <button class="btn danger" data-overlay-out="matchup">Out</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-panel="rosters">
+      <section class="card wide">
+        <h2>Roster Settings</h2>
+        <div class="vmix-actions" style="margin-bottom:12px">
+          <button class="btn" id="import-excel">Sync Excel Rosters</button>
+          <button class="btn secondary monitor-btn" type="button" data-monitor="rosterAway">Monitor Away</button>
+          <button class="btn secondary monitor-btn" type="button" data-monitor="rosterHome">Monitor Home</button>
+        </div>
+        <div class="form-grid">
+          <label>Roster title <input data-path="rosters.title"></label>
+          <label>Roster subtitle <input data-path="rosters.subtitle"></label>
+        </div>
+      </section>
+
+      <div class="grid">
+        <section class="card">
+          <h2>Away Roster vMix Setup</h2>
+          <div class="url-box" data-url="rosterAway"></div>
+          <div class="form-grid" style="margin-top:12px">
+            <label>Away roster input # <input data-path="vmix.rosterAwayInput" placeholder="Example: 11"></label>
+          </div>
+          <label style="margin-top:12px">Away roster lines
+            <textarea data-path="rosters.away.playersText" rows="10" placeholder="00  Nombre Jugador  SS"></textarea>
+          </label>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn" data-overlay-in="rosterAway">In</button>
+          <button class="btn danger" data-overlay-out="rosterAway">Out</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Home Roster vMix Setup</h2>
+          <div class="url-box" data-url="rosterHome"></div>
+          <div class="form-grid" style="margin-top:12px">
+            <label>Home roster input # <input data-path="vmix.rosterHomeInput" placeholder="Example: 12"></label>
+          </div>
+          <label style="margin-top:12px">Home roster lines
+            <textarea data-path="rosters.home.playersText" rows="10" placeholder="00  Nombre Jugador  SS"></textarea>
+          </label>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn" data-overlay-in="rosterHome">In</button>
+          <button class="btn danger" data-overlay-out="rosterHome">Out</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="tab-panel" data-panel="umpires">
+      <section class="card wide">
+        <h2>Umpires vMix Setup</h2>
+        <div class="url-box" data-url="umpires"></div>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn secondary" id="import-excel-umpires">Sync Excel Umpires</button>
+        </div>
+        <div class="form-grid" style="margin-top:12px">
+          <label>Umpires input # <input data-path="vmix.umpiresInput" placeholder="Example: 13"></label>
+          <label>Title <input data-path="umpires.title"></label>
+          <label>Subtitle <input data-path="umpires.subtitle"></label>
+        </div>
+        <label style="margin-top:12px">Officials lines
+          <textarea data-path="umpires.crewText" rows="8" placeholder="HP  Official Name  Plate Umpire"></textarea>
+        </label>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn" data-overlay-in="umpires">In</button>
+          <button class="btn danger" data-overlay-out="umpires">Out</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-panel="player">
+      <section class="card wide">
+        <h2>Player vMix Setup</h2>
+        <div class="url-box" data-url="player"></div>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn secondary" id="import-excel-player">Sync Excel Players</button>
+        </div>
+        <div class="form-grid" style="margin-top:12px">
+          <label>Player input # <input data-path="vmix.playerInput" placeholder="Example: 14"></label>
+          <label>Title <input data-path="player.title"></label>
+          <label>Subtitle <input data-path="player.subtitle"></label>
+          <label>Team
+            <select data-path="player.teamSide">
+              <option value="away">Away</option>
+              <option value="home">Home</option>
+            </select>
+          </label>
+          <label>Batter from Excel
+            <select id="player-picker"></select>
+          </label>
+          <label>Number <input data-path="player.number"></label>
+          <label>Player name <input data-path="player.name"></label>
+          <label>Detail <input data-path="player.detail" placeholder="Country, position, or note"></label>
+        </div>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn" data-overlay-in="player">In</button>
+          <button class="btn danger" data-overlay-out="player">Out</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-panel="commentators">
+      <section class="card wide">
+        <h2>Commentators vMix Setup</h2>
+        <div class="url-box" data-url="commentators"></div>
+        <div class="form-grid" style="margin-top:12px">
+          <label>Commentators input # <input data-path="vmix.commentatorsInput" placeholder="Example: 15"></label>
+          <label>Title <input data-path="commentators.title"></label>
+          <label>Subtitle <input data-path="commentators.subtitle"></label>
+          <label>Layout
+            <select data-path="commentators.layout">
+              <option value="one">One commentator</option>
+              <option value="two">Two commentators</option>
+            </select>
+          </label>
+          <label>Name 1 <input data-path="commentators.name1"></label>
+          <label>Role 1 <input data-path="commentators.role1"></label>
+          <label>Name 2 <input data-path="commentators.name2"></label>
+          <label>Role 2 <input data-path="commentators.role2"></label>
+        </div>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn" data-overlay-in="commentators">In</button>
+          <button class="btn danger" data-overlay-out="commentators">Out</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="tab-panel" data-panel="upcoming">
+      <section class="card wide">
+        <h2>Upcoming vMix Setup</h2>
+        <div class="url-box" data-url="upcoming"></div>
+        <div class="form-grid" style="margin-top:12px">
+          <label>Upcoming input # <input data-path="vmix.upcomingInput" placeholder="Example: 16"></label>
+          <label>Title <input data-path="upcoming.title"></label>
+          <label>Subtitle <input data-path="upcoming.subtitle"></label>
+          <label>Show games
+            <select data-path="upcoming.count">
+              <option value="1">1 game</option>
+              <option value="2">2 games</option>
+              <option value="3">3 games</option>
+            </select>
+          </label>
+        </div>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn" data-overlay-in="upcoming">In</button>
+          <button class="btn danger" data-overlay-out="upcoming">Out</button>
+        </div>
+      </section>
+
+      <div class="grid">
+        <section class="card">
+          <h2>Game 1</h2>
+          <div class="form-grid">
+            <label>Away <input data-path="upcoming.games.0.away"></label>
+            <label>Home <input data-path="upcoming.games.0.home"></label>
+            <label>Time <input data-path="upcoming.games.0.time"></label>
+            <label>Court <input data-path="upcoming.games.0.court"></label>
+            <label>Round <input data-path="upcoming.games.0.round"></label>
+            <label>Status <input data-path="upcoming.games.0.status"></label>
+          </div>
+        </section>
+        <section class="card">
+          <h2>Game 2</h2>
+          <div class="form-grid">
+            <label>Away <input data-path="upcoming.games.1.away"></label>
+            <label>Home <input data-path="upcoming.games.1.home"></label>
+            <label>Time <input data-path="upcoming.games.1.time"></label>
+            <label>Court <input data-path="upcoming.games.1.court"></label>
+            <label>Round <input data-path="upcoming.games.1.round"></label>
+            <label>Status <input data-path="upcoming.games.1.status"></label>
+          </div>
+        </section>
+        <section class="card wide">
+          <h2>Game 3</h2>
+          <div class="form-grid">
+            <label>Away <input data-path="upcoming.games.2.away"></label>
+            <label>Home <input data-path="upcoming.games.2.home"></label>
+            <label>Time <input data-path="upcoming.games.2.time"></label>
+            <label>Court <input data-path="upcoming.games.2.court"></label>
+            <label>Round <input data-path="upcoming.games.2.round"></label>
+            <label>Status <input data-path="upcoming.games.2.status"></label>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Game</h2>
+        <div class="form-grid">
+          <label>Event <input data-path="event.name"></label>
+          <label>Status <input data-path="event.status"></label>
+          <label>Game ID <input data-path="match.gameId"></label>
+          <label>Inning <input data-path="match.inning" type="number" min="1" max="20"></label>
+          <label>Half
+            <select data-path="match.half">
+              <option value="TOP">TOP</option>
+              <option value="BOTTOM">BOTTOM</option>
+            </select>
+          </label>
+          <label>Outs <input data-path="match.outs" type="number" min="0" max="2"></label>
+          <label>Balls <input data-path="match.balls" type="number" min="0" max="3"></label>
+          <label>Strikes <input data-path="match.strikes" type="number" min="0" max="2"></label>
+          <div class="base-control-wrap">
+            <span>Base runners</span>
+            <div class="base-control" aria-label="Base runners">
+              <button type="button" class="base-toggle second" data-base-toggle="second" aria-label="Second base"></button>
+              <button type="button" class="base-toggle third" data-base-toggle="third" aria-label="Third base"></button>
+              <button type="button" class="base-toggle first" data-base-toggle="first" aria-label="First base"></button>
+            </div>
+          </div>
+          <label>Tie-break desde entrada <input data-path="match.tiebreakInning" type="number" min="2" max="20"></label>
+          <label>Entradas reglamentarias <input data-path="match.regulationInnings" type="number" min="3" max="9"></label>
+        </div>
+        <h2 style="margin-top:14px">Conteo <span class="count-pill" id="count-pill">0-0</span></h2>
+        <div class="quick-actions game-actions" style="margin-top:8px">
+          <button class="btn btn-ball" data-action="ball-plus" title="4ta bola = base por bolas automática">Ball +</button>
+          <button class="btn btn-strike" data-action="strike-plus" title="3er strike = out automático">Strike +</button>
+          <button class="btn secondary" data-action="foul" title="Suma strike solo si hay menos de 2">Foul</button>
+          <button class="btn secondary" data-action="count-reset">Reset conteo</button>
+          <button class="btn secondary" data-action="ball-minus">Ball -</button>
+          <button class="btn secondary" data-action="strike-minus">Strike -</button>
+          <button class="btn secondary" data-action="walk">Base x bolas / HBP</button>
+        </div>
+        <div class="quick-actions game-actions" style="margin-top:12px">
+          <button class="btn btn-out" data-action="out-plus" title="3er out = cambio de lado automático">+ Out</button>
+          <button class="btn secondary" data-action="out-minus">- Out</button>
+          <button class="btn btn-side" data-action="change-side">Cambio de lado</button>
+          <button class="btn secondary" data-action="bases-clear">Limpiar bases</button>
+          <button class="btn secondary" data-action="inning-plus">+ Inning</button>
+          <button class="btn secondary" data-action="inning-minus">- Inning</button>
+          <button class="btn secondary" data-action="half-toggle">TOP/BOT</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Teams & Score</h2>
+        <div class="form-grid">
+          <label>Away team <input data-path="match.teams.away.name"></label>
+          <label>Home team <input data-path="match.teams.home.name"></label>
+          <label>Away short <input data-path="match.teams.away.short"></label>
+          <label>Home short <input data-path="match.teams.home.short"></label>
+          <label>Away runs <input data-path="match.teams.away.score" type="number"></label>
+          <label>Home runs <input data-path="match.teams.home.score" type="number"></label>
+          <label>Away hits <input data-path="match.teams.away.hits" type="number" min="0"></label>
+          <label>Home hits <input data-path="match.teams.home.hits" type="number" min="0"></label>
+          <label>Away errors <input data-path="match.teams.away.errors" type="number" min="0"></label>
+          <label>Home errors <input data-path="match.teams.home.errors" type="number" min="0"></label>
+          <label>Away color <input data-path="match.teams.away.color" type="color"></label>
+          <label>Home color <input data-path="match.teams.home.color" type="color"></label>
+          <label>Away logo
+            <select data-path="match.teams.away.logo"></select>
+          </label>
+          <label>Home logo
+            <select data-path="match.teams.home.logo"></select>
+          </label>
+          <label>Away line <input data-path="match.teams.away.line" placeholder="0,2,0,1,0,0,0"></label>
+          <label>Home line <input data-path="match.teams.home.line" placeholder="1,0,2,1,0,0,0"></label>
+        </div>
+        <div class="quick-actions game-actions" style="margin-top:12px">
+          <button class="btn" data-action="run-plus" title="Carrera para el equipo que batea">Carrera +</button>
+          <button class="btn secondary" data-action="run-minus">Carrera -</button>
+          <button class="btn secondary" data-action="hit-plus" title="Hit para el equipo que batea">Hit +</button>
+          <button class="btn secondary" data-action="hit-minus">Hit -</button>
+          <button class="btn secondary" data-action="error-plus" title="Error para el equipo que defiende">Error +</button>
+          <button class="btn secondary" data-action="error-minus">Error -</button>
+        </div>
+        <div class="quick-actions" style="margin-top:12px">
+          <button class="btn secondary" data-action="away-minus">Away -</button>
+          <button class="btn secondary" data-action="away-plus">Away +</button>
+          <button class="btn secondary" data-action="home-minus">Home -</button>
+          <button class="btn secondary" data-action="home-plus">Home +</button>
+          <button class="btn danger" data-action="game-reset" data-confirm="Reiniciar el partido? Se borran carreras, hits, errores y line score.">Nuevo partido</button>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script src="assets/control.js?v=20261105-softball"></script>
+</body>
+</html>
+
