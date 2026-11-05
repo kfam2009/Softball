@@ -7,7 +7,11 @@ Panel de gráficos de **Softball** para transmisiones con vMix. Los gráficos se
 - En vMix el input NDI tiene que estar en un **Overlay** (por ejemplo Overlay 1). El In/Out del panel muestra u oculta el gráfico dentro del NDI.
 
 ## Gráficos
-Scorebug, Scoreboard (line score), Matchup, Rosters (home/away), Umpires, Player, Commentators, Upcoming.
+Scorebug, Scoreboard (line score), Matchup, Rosters (home/away), **Line up** (home/away), **Defensa**, Umpires, Player, Commentators, Upcoming.
+
+### Line up y Defensa
+En la pestaña **Line up** se arma cada equipo: para cada turno (1 a 9) y el **FLEX** se elige el jugador de la lista del Excel (hoja HOME/AWAY) y su posición (P, C, 1B, 2B, 3B, SS, LF, CF, RF, DP, EP). No importa si en el Excel falta el número o la posición.
+La **Defensa** dibuja la cancha con cada jugador en su posición (el DP no aparece porque no defiende; el FLEX sí). En "Auto" muestra al equipo que está en el campo.
 
 ## Reglas de softball (fastpitch WBSC)
 | Acción | Qué hace |

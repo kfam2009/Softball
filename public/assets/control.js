@@ -41,6 +41,8 @@ const teamLogoOptions = [
   }
 ];
 let currentTab = "scorebug";
+const LINEUP_SLOTS = 10; // 9 bateadores + FLEX
+const POSITIONS = ["", "P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DP", "EP"];
 
 const graphics = {
   scorebug: { label: "Scorebug" },
@@ -51,7 +53,10 @@ const graphics = {
   umpires: { label: "Umpires" },
   player: { label: "Player" },
   commentators: { label: "Commentators" },
-  upcoming: { label: "Upcoming" }
+  upcoming: { label: "Upcoming" },
+  lineupAway: { label: "Away Line up" },
+  lineupHome: { label: "Home Line up" },
+  defense: { label: "Defensa" }
 };
 const tabPreviewGraphic = {
   scorebug: "scorebug",
@@ -61,7 +66,9 @@ const tabPreviewGraphic = {
   umpires: "umpires",
   player: "player",
   commentators: "commentators",
-  upcoming: "upcoming"
+  upcoming: "upcoming",
+  lineup: "lineupHome",
+  defense: "defense"
 };
 const openReplayPanelButton = document.getElementById("open-replay-panel");
 const openRenderLink = document.getElementById("open-render");
@@ -176,6 +183,15 @@ function ensureStateDefaults() {
   state.rosters ||= { title: "TEAM ROSTER", subtitle: state.event.name, away: { playersText: "" }, home: { playersText: "" } };
   state.rosters.away ||= { playersText: "" };
   state.rosters.home ||= { playersText: "" };
+  state.lineups ||= { title: "LINEUP", subtitle: state.event.name };
+  for (const side of ["away", "home"]) {
+    state.lineups[side] ||= {};
+    const slots = Array.isArray(state.lineups[side].slots) ? state.lineups[side].slots : [];
+    while (slots.length < LINEUP_SLOTS) slots.push({ number: "", name: "", pos: "" });
+    slots.forEach((slot, index) => { slot.flex = index === LINEUP_SLOTS - 1; });
+    state.lineups[side].slots = slots.slice(0, LINEUP_SLOTS);
+  }
+  state.defense ||= { title: "DEFENSE", subtitle: state.event.name, side: "auto" };
   state.umpires ||= { title: "OFFICIALS", subtitle: state.event.name, crewText: "" };
   state.player ||= { title: "PLAYER", subtitle: state.event.name, teamSide: "home", number: "", name: "", detail: "" };
   state.commentators ||= { title: "COMMENTATORS", subtitle: state.event.name, layout: "two", name1: "", role1: "Play-by-play", name2: "", role2: "Analyst" };
@@ -214,6 +230,7 @@ function fillForm() {
     if (path.endsWith(".logo")) renderLogoPreview(field);
   }
   fillPlayerPicker();
+  renderLineupBuilders();
   renderBaseControl();
   renderCount();
   renderNdiButtons();
@@ -257,6 +274,62 @@ function renderBaseControl() {
     button.classList.toggle("on", isOn);
     button.setAttribute("aria-pressed", String(isOn));
   }
+}
+
+function rosterPlayers(side) {
+  return (state.excel?.[side] || []).filter(row => String(row.name || "").trim() && !staffRole.test(String(row.role || "")));
+}
+
+function playerKey(player) {
+  return `${String(player.number || "").trim()}|${String(player.name || "").trim()}`;
+}
+
+function renderLineupBuilders() {
+  document.querySelectorAll("[data-lineup-side]").forEach(container => {
+    if (container.contains(document.activeElement)) return;
+    const side = container.dataset.lineupSide;
+    const players = rosterPlayers(side);
+    const slots = state.lineups[side].slots;
+    container.innerHTML = slots.map((slot, index) => {
+      const options = [`<option value="">-</option>`];
+      const keys = new Set();
+      for (const player of players) {
+        const key = playerKey(player);
+        keys.add(key);
+        const label = player.number ? `${player.number} | ${player.name}` : player.name;
+        options.push(`<option value="${escAttr(key)}" ${key === playerKey(slot) && slot.name ? "selected" : ""}>${escAttr(label)}</option>`);
+      }
+      if (slot.name && !keys.has(playerKey(slot))) {
+        options.push(`<option value="${escAttr(playerKey(slot))}" selected>${escAttr(slot.number ? `${slot.number} | ${slot.name}` : slot.name)}</option>`);
+      }
+      const posOptions = POSITIONS.map(pos => `<option value="${pos}" ${pos === (slot.pos || "") ? "selected" : ""}>${pos || "Pos"}</option>`).join("");
+      return `
+        <div class="lineup-slot ${slot.flex ? "flex" : ""}">
+          <span class="lineup-slot-order">${slot.flex ? "FLEX" : index + 1}</span>
+          <select data-slot-player="${index}">${options.join("")}</select>
+          <select data-slot-pos="${index}">${posOptions}</select>
+        </div>`;
+    }).join("");
+    container.querySelectorAll("[data-slot-player]").forEach(select => select.addEventListener("change", () => {
+      const slot = slots[Number(select.dataset.slotPlayer)];
+      const [number = "", ...nameParts] = select.value.split("|");
+      slot.number = select.value ? number : "";
+      slot.name = select.value ? nameParts.join("|") : "";
+      const rosterPos = players.find(player => playerKey(player) === select.value)?.role || "";
+      if (select.value && !slot.pos && POSITIONS.includes(rosterPos.toUpperCase())) slot.pos = rosterPos.toUpperCase();
+      scheduleSave();
+      select.blur();
+    }));
+    container.querySelectorAll("[data-slot-pos]").forEach(select => select.addEventListener("change", () => {
+      slots[Number(select.dataset.slotPos)].pos = select.value;
+      scheduleSave();
+      select.blur();
+    }));
+  });
+}
+
+function escAttr(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[char]));
 }
 
 function renderCount() {
@@ -508,6 +581,15 @@ async function importExcelData() {
 document.getElementById("import-excel-global")?.addEventListener("click", () => importExcelData().catch(error => setStatus(error.message, true)));
 document.getElementById("import-excel")?.addEventListener("click", () => importExcelData().catch(error => setStatus(error.message, true)));
 document.getElementById("import-excel-umpires")?.addEventListener("click", () => importExcelData().catch(error => setStatus(error.message, true)));
+document.getElementById("import-excel-lineup")?.addEventListener("click", () => importExcelData().catch(error => setStatus(error.message, true)));
+document.querySelectorAll("[data-lineup-clear]").forEach(button => button.addEventListener("click", () => {
+  if (!window.confirm("Limpiar el line up de este equipo?")) return;
+  const side = button.dataset.lineupClear;
+  state.lineups[side].slots = [];
+  ensureStateDefaults();
+  renderLineupBuilders();
+  scheduleSave();
+}));
 document.getElementById("import-excel-player")?.addEventListener("click", () => importExcelData().catch(error => setStatus(error.message, true)));
 playerPicker?.addEventListener("change", setPlayerFromPicker);
 

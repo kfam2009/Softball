@@ -88,6 +88,10 @@ function normalizeState(state) {
   state.rosters ||= { title: "TEAM ROSTER", subtitle: state.event.name, away: { playersText: "" }, home: { playersText: "" } };
   state.rosters.away ||= { playersText: "" };
   state.rosters.home ||= { playersText: "" };
+  state.lineups ||= { title: "LINEUP", subtitle: state.event.name };
+  state.lineups.home ||= { text: "" };
+  state.lineups.away ||= { text: "" };
+  state.defense ||= { title: "DEFENSE", subtitle: state.event.name, side: "auto" };
   state.umpires ||= { title: "OFFICIALS", subtitle: state.event.name, crewText: "" };
   state.player ||= { title: "PLAYER", subtitle: state.event.name, teamSide: "home", number: "", name: "", detail: "" };
   state.commentators ||= { title: "COMMENTATORS", subtitle: state.event.name, layout: "two", name1: "", role1: "Play-by-play", name2: "", role2: "Analyst" };
@@ -227,12 +231,16 @@ function applyExcelToState(state, excel) {
   state.rosters.home.playersText = excel.homeText;
   state.rosters.away.playersText = excel.awayText;
   state.umpires.crewText = excel.umpiresText;
+  if (excel.lineupHome?.length) state.lineups.home.text = excel.lineupHomeText;
+  if (excel.lineupAway?.length) state.lineups.away.text = excel.lineupAwayText;
   state.excel = {
     source: excel.source,
     updatedAt: new Date().toISOString(),
     home: excel.home,
     away: excel.away,
-    umpires: excel.umpires
+    umpires: excel.umpires,
+    lineupHome: excel.lineupHome || [],
+    lineupAway: excel.lineupAway || []
   };
 
   const side = state.player.teamSide === "away" ? "away" : "home";

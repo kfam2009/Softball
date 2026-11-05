@@ -16,7 +16,10 @@ const vmixPlacement = {
   umpires: { panX: -0.6098266, panY: -0.6323907, zoom: 0.7165 },
   player: { panX: -0.5780346, panY: -0.1388174, zoom: 1 },
   commentators: { panX: -0.6329479, panY: -0.3650386, zoom: 0.60825 },
-  upcoming: { panX: 0, panY: 0, zoom: 1 }
+  upcoming: { panX: 0, panY: 0, zoom: 1 },
+  lineupHome: { panX: 0, panY: 0, zoom: 1 },
+  lineupAway: { panX: 0, panY: 0, zoom: 1 },
+  defense: { panX: 0, panY: 0, zoom: 1 }
 };
 
 function vmixStyle(key) {
@@ -325,6 +328,142 @@ function renderUpcoming(state) {
   `;
 }
 
+
+// ---------- Line up y defensa ----------
+const fieldPositions = {
+  P: { x: 500, y: 535, label: "P" },
+  C: { x: 500, y: 655, label: "C" },
+  "1B": { x: 760, y: 470, label: "1B" },
+  "2B": { x: 650, y: 335, label: "2B" },
+  SS: { x: 350, y: 335, label: "SS" },
+  "3B": { x: 240, y: 470, label: "3B" },
+  LF: { x: 205, y: 205, label: "LF" },
+  CF: { x: 500, y: 115, label: "CF" },
+  RF: { x: 795, y: 205, label: "RF" }
+};
+const positionAliases = { "1": "P", "2": "C", "3": "1B", "4": "2B", "5": "3B", "6": "SS", "7": "LF", "8": "CF", "9": "RF", LANZADOR: "P", PITCHER: "P", RECEPTOR: "C", CATCHER: "C" };
+
+function normalizePos(value) {
+  const key = String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+  return positionAliases[key] || key;
+}
+
+function parseLineup(text) {
+  return String(text || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
+    if (line.includes("|")) {
+      const [order = "", number = "", name = "", pos = ""] = line.split("|").map(part => part.trim());
+      return { order, number, name, pos };
+    }
+    let parts = line.split(/\s{2,}|\t/).map(part => part.trim()).filter(Boolean);
+    if (parts.length < 3) parts = line.split(/\s+/);
+    if (parts.length >= 4) return { order: parts[0], number: parts[1], name: parts.slice(2, -1).join(" "), pos: parts[parts.length - 1] };
+    if (parts.length === 3) return { order: parts[0], number: "", name: parts[1], pos: parts[2] };
+    return { order: "", number: "", name: parts.join(" "), pos: "" };
+  });
+}
+
+function lineupRows(state, side) {
+  const excelKey = side === "home" ? "lineupHome" : "lineupAway";
+  const excelRows = Array.isArray(state.excel?.[excelKey]) ? state.excel[excelKey] : [];
+  const slots = Array.isArray(state.lineups?.[side]?.slots) ? state.lineups[side].slots : [];
+  const slotRows = slots
+    .map((slot, index) => ({ order: slot.flex ? "FLEX" : String(index + 1), number: slot.number, name: slot.name, pos: slot.pos }))
+    .filter(row => String(row.name || "").trim());
+  const textRows = parseLineup(state.lineups?.[side]?.text);
+  const rows = (slotRows.length ? slotRows : textRows.length ? textRows : excelRows).filter(row => String(row.name || "").trim());
+  // Si falta el orden al bate se numera solo; FLEX no batea.
+  let next = 1;
+  return rows.map(row => {
+    const pos = normalizePos(row.pos);
+    let order = String(row.order || "").trim();
+    if (/^\d+$/.test(order)) next = Number(order) + 1;
+    else if (!order) order = pos === "FLEX" ? "FLEX" : String(next++);
+    return { ...row, order };
+  });
+}
+
+function renderLineup(state, side) {
+  const key = side === "home" ? "lineupHome" : "lineupAway";
+  const team = state.match.teams[side];
+  const data = state.lineups || {};
+  const rows = lineupRows(state, side).slice(0, 12).map(row => {
+    const order = String(row.order || "").trim();
+    const isFlex = !/^\d+$/.test(order);
+    return `
+      <div class="lineup-row ${isFlex ? "flex-row" : ""}">
+        <span class="lineup-order">${esc(order || "FLEX")}</span>
+        <span class="lineup-number">${esc(row.number)}</span>
+        <span class="lineup-name">${esc(row.name)}</span>
+        <span class="lineup-pos">${esc(normalizePos(row.pos))}</span>
+      </div>`;
+  }).join("");
+  return `
+    <section class="roster-card lineup-card ${side} ${entryClass(key)}">
+      <header class="roster-header">
+        <div><div class="roster-kicker">${esc(data.subtitle || state.event.name)}</div><div class="roster-title">${esc(data.title || "LINEUP")}</div></div>
+        <div class="roster-side">${side === "home" ? "HOME" : "AWAY"}</div>
+      </header>
+      <div class="roster-team-band" style="--team-color:${esc(team.color)}">${rosterLogo(team)}<strong>${esc(team.name)}</strong></div>
+      <div class="lineup-table"><div class="lineup-head"><span>Bat</span><span>#</span><span>Name</span><span>Pos</span></div>${rows}</div>
+      <footer class="roster-footer"><span>${esc(state.event.status || "")}</span><span>${esc(state.match.gameId || "SOFTBALL")}</span></footer>
+    </section>
+  `;
+}
+
+function defenseSide(state) {
+  const choice = state.defense?.side || "auto";
+  if (choice === "home" || choice === "away") return choice;
+  return state.match.half === "BOTTOM" ? "away" : "home";
+}
+
+function renderDefense(state) {
+  const side = defenseSide(state);
+  const team = state.match.teams[side];
+  const data = state.defense || {};
+  const byPos = {};
+  for (const row of lineupRows(state, side)) {
+    const pos = normalizePos(row.pos);
+    if (fieldPositions[pos] && !byPos[pos]) byPos[pos] = row;
+  }
+  const markers = Object.entries(fieldPositions).map(([pos, spot]) => {
+    const row = byPos[pos];
+    if (!row) return "";
+    return `
+      <div class="defense-player" style="left:${spot.x / 10}%;top:${spot.y / 7}%">
+        <span class="defense-pos">${esc(spot.label)}</span>
+        <span class="defense-number">${esc(row.number)}</span>
+        <span class="defense-name">${esc(row.name)}</span>
+      </div>`;
+  }).join("");
+  return `
+    <section class="roster-card defense-card ${side} ${entryClass("defense")}">
+      <header class="roster-header">
+        <div><div class="roster-kicker">${esc(data.subtitle || state.event.name)}</div><div class="roster-title">${esc(data.title || "DEFENSE")}</div></div>
+        <div class="roster-side defense-team" style="--team-color:${esc(team.color)}">${esc(team.short || team.name)}</div>
+      </header>
+      <div class="defense-field">
+        <svg viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <radialGradient id="grass" cx="50%" cy="100%" r="100%">
+              <stop offset="0%" stop-color="#2f8f4e"/><stop offset="100%" stop-color="#1b5e33"/>
+            </radialGradient>
+          </defs>
+          <path d="M500 680 L40 220 Q500 -120 960 220 Z" fill="url(#grass)" stroke="rgba(255,255,255,.55)" stroke-width="4"/>
+          <path d="M500 680 L300 480 Q500 260 700 480 Z" fill="#b9814f" opacity=".92"/>
+          <path d="M500 640 L640 500 L500 360 L360 500 Z" fill="#2f8f4e" stroke="#fff" stroke-width="4"/>
+          <circle cx="500" cy="500" r="22" fill="#b9814f"/>
+          <rect x="489" y="629" width="22" height="22" fill="#fff" transform="rotate(45 500 640)"/>
+          <rect x="630" y="490" width="20" height="20" fill="#fff" transform="rotate(45 640 500)"/>
+          <rect x="490" y="350" width="20" height="20" fill="#fff" transform="rotate(45 500 360)"/>
+          <rect x="350" y="490" width="20" height="20" fill="#fff" transform="rotate(45 360 500)"/>
+        </svg>
+        ${markers}
+      </div>
+      <footer class="roster-footer"><span>${esc(team.name)}</span><span>${esc(state.match.gameId || "SOFTBALL")}</span></footer>
+    </section>
+  `;
+}
+
 const renderers = {
   scorebug: renderScorebug,
   scoreboard: renderScoreboard,
@@ -334,7 +473,10 @@ const renderers = {
   umpires: renderUmpires,
   player: renderPlayer,
   commentators: renderCommentators,
-  upcoming: renderUpcoming
+  upcoming: renderUpcoming,
+  lineupAway: state => renderLineup(state, "away"),
+  lineupHome: state => renderLineup(state, "home"),
+  defense: renderDefense
 };
 
 function removeLayer(key, animated = true) {

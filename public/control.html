@@ -42,6 +42,8 @@
       <button class="tab-btn" data-tab="scoreboard">Scoreboard</button>
       <button class="tab-btn" data-tab="matchup">Matchup</button>
       <button class="tab-btn" data-tab="rosters">Rosters</button>
+      <button class="tab-btn" data-tab="lineup">Line up</button>
+      <button class="tab-btn" data-tab="defense">Defensa</button>
       <button class="tab-btn" data-tab="umpires">Umpires</button>
       <button class="tab-btn" data-tab="player">Player</button>
       <button class="tab-btn" data-tab="commentators">Commentators</button>
@@ -69,6 +71,9 @@
               <option value="player">Player</option>
               <option value="commentators">Commentators</option>
               <option value="upcoming">Upcoming</option>
+              <option value="lineupAway">Away Line up</option>
+              <option value="lineupHome">Home Line up</option>
+              <option value="defense">Defensa</option>
             </select>
           </label>
           <label>Visible
@@ -175,6 +180,65 @@
           </div>
         </section>
       </div>
+    </section>
+
+    <section class="tab-panel" data-panel="lineup">
+      <section class="card wide">
+        <h2>Line up</h2>
+        <p class="hint">Elegí para cada turno al bate el jugador (del Excel) y la posición en el campo. El FLEX no batea: su posición es la que juega en defensa.</p>
+        <div class="vmix-actions" style="margin-bottom:12px">
+          <button class="btn secondary" id="import-excel-lineup">Sync Excel (rosters)</button>
+          <button class="btn secondary monitor-btn" type="button" data-monitor="lineupAway">Monitor Away</button>
+          <button class="btn secondary monitor-btn" type="button" data-monitor="lineupHome">Monitor Home</button>
+        </div>
+        <div class="form-grid">
+          <label>Title <input data-path="lineups.title"></label>
+          <label>Subtitle <input data-path="lineups.subtitle"></label>
+        </div>
+      </section>
+      <div class="grid">
+        <section class="card">
+          <h2>Away Line up</h2>
+          <div class="lineup-builder" data-lineup-side="away"></div>
+          <div class="vmix-actions" style="margin-top:12px">
+            <button class="btn" data-overlay-in="lineupAway">In</button>
+            <button class="btn danger" data-overlay-out="lineupAway">Out</button>
+            <button class="btn secondary" type="button" data-lineup-clear="away">Limpiar</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2>Home Line up</h2>
+          <div class="lineup-builder" data-lineup-side="home"></div>
+          <div class="vmix-actions" style="margin-top:12px">
+            <button class="btn" data-overlay-in="lineupHome">In</button>
+            <button class="btn danger" data-overlay-out="lineupHome">Out</button>
+            <button class="btn secondary" type="button" data-lineup-clear="home">Limpiar</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="tab-panel" data-panel="defense">
+      <section class="card wide">
+        <h2>Defensa</h2>
+        <p class="hint">Muestra la cancha con los jugadores del line up en su posición. En "Auto" muestra al equipo que está defendiendo.</p>
+        <div class="form-grid" style="margin-top:12px">
+          <label>Equipo
+            <select data-path="defense.side">
+              <option value="auto">Auto (el que defiende)</option>
+              <option value="away">Away</option>
+              <option value="home">Home</option>
+            </select>
+          </label>
+          <label>Title <input data-path="defense.title"></label>
+          <label>Subtitle <input data-path="defense.subtitle"></label>
+        </div>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn" data-overlay-in="defense">In</button>
+          <button class="btn danger" data-overlay-out="defense">Out</button>
+          <button class="btn secondary monitor-btn" type="button" data-monitor="defense">Monitor</button>
+        </div>
+      </section>
     </section>
 
     <section class="tab-panel" data-panel="umpires">
