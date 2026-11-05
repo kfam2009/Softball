@@ -340,8 +340,14 @@
               <button type="button" class="base-toggle first" data-base-toggle="first" aria-label="First base"></button>
             </div>
           </div>
-          <label>Tie-break desde entrada <input data-path="match.tiebreakInning" type="number" min="2" max="20"></label>
           <label>Entradas reglamentarias <input data-path="match.regulationInnings" type="number" min="3" max="9"></label>
+          <label>Tie-break
+            <select data-path="match.autoTiebreak">
+              <option value="true">Si (corredor en 2da)</option>
+              <option value="false">No</option>
+            </select>
+          </label>
+          <label>Tie-break desde entrada <input data-path="match.tiebreakInning" type="number" min="2" max="20" placeholder="auto"></label>
         </div>
         <h2 style="margin-top:14px">Conteo <span class="count-pill" id="count-pill">0-0</span></h2>
         <div class="quick-actions game-actions" style="margin-top:8px">

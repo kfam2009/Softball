@@ -64,7 +64,7 @@ function normalizeState(state) {
   match.balls = clamp(Number(match.balls || 0), 0, 3);
   match.strikes = clamp(Number(match.strikes || 0), 0, 2);
   match.regulationInnings = Number(match.regulationInnings || 7);
-  match.tiebreakInning = Number(match.tiebreakInning || 8);
+  match.tiebreakInning = Number(match.tiebreakInning || 0); // 0 = auto (reglamentarias + 1)
   match.autoTiebreak = match.autoTiebreak !== false;
   match.bases ||= { first: false, second: false, third: false };
   match.teams ||= {};
@@ -285,12 +285,16 @@ function resetCount(match) {
   match.strikes = 0;
 }
 
+function tiebreakStart(match) {
+  return Number(match.tiebreakInning) || (Number(match.regulationInnings || 7) + 1);
+}
+
 function startHalf(match) {
   match.outs = 0;
   match.bases = { first: false, second: false, third: false };
   resetCount(match);
   // Tie-breaker WBSC: desde la entrada 8 cada mitad arranca con corredor en segunda.
-  if (match.autoTiebreak !== false && Number(match.inning) >= Number(match.tiebreakInning || 8)) {
+  if (match.autoTiebreak !== false && Number(match.inning) >= tiebreakStart(match)) {
     match.bases.second = true;
   }
 }

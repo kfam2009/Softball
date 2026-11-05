@@ -17,12 +17,12 @@ Scorebug, Scoreboard (line score), Matchup, Rosters (home/away), Umpires, Player
 | Foul | Suma strike solo si hay menos de 2. |
 | + Out | Suma out y reinicia el conteo. El 3º = cambio de lado automático. |
 | Cambio de lado | TOP → BOTTOM; BOTTOM → TOP de la entrada siguiente. Limpia outs, bases y conteo. |
-| Tie-breaker | Desde la entrada configurada (8 por defecto) cada mitad arranca con corredor en 2ª. |
+| Tie-breaker | Por defecto arranca en la entrada siguiente a las reglamentarias (8ª con 7, 6ª con 5) con corredor en 2ª. Se puede fijar otra entrada o apagarlo. |
 | Carrera / Hit | Para el equipo que batea (TOP = visitante, BOTTOM = local). |
 | Error | Para el equipo que defiende. |
 | Nuevo partido | Borra carreras, hits, errores y line score. |
 
-El scoreboard muestra 7 entradas (configurable) y agrega columnas si hay extra innings, con totales **R H E**.
+El scoreboard muestra las **entradas reglamentarias** (7 por defecto; 5 para infantiles, se cambia en el panel) y agrega columnas si hay extra innings, con totales **R H E**.
 
 ## Excel
 `C:\Users\claud\Videos\Softball2026\Datos.xlsx` (cambiar con la variable `SB_EXCEL`). Hojas **HOME**, **AWAY** y **UMPIRES**, columnas A/B/C: número, nombre, posición (o rol). Ver `Datos-ejemplo.xlsx`. Después de guardar, **Sync Excel** en el panel.

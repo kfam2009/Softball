@@ -136,6 +136,8 @@ function parseValue(path, value, type) {
 
 function formatValue(path, value) {
   if (value === undefined || value === null) return "";
+  if (path === "match.tiebreakInning" && !Number(value)) return "";
+  if (typeof value === "boolean") return String(value);
   if (path.endsWith(".line") && Array.isArray(value)) return value.join(",");
   return value;
 }
@@ -151,7 +153,8 @@ function ensureStateDefaults() {
   match.balls ||= 0;
   match.strikes ||= 0;
   match.regulationInnings ||= 7;
-  match.tiebreakInning ||= 8;
+  match.tiebreakInning ||= 0;
+  if (match.autoTiebreak === undefined) match.autoTiebreak = true;
   match.bases ||= { first: false, second: false, third: false };
   match.teams ||= {};
   for (const [side, defaults] of Object.entries({

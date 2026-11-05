@@ -11,7 +11,7 @@ module.exports = {
     balls: 0,
     strikes: 0,
     regulationInnings: 7,
-    tiebreakInning: 8,
+    tiebreakInning: 0,
     autoTiebreak: true,
     bases: { first: false, second: false, third: false },
     teams: {
