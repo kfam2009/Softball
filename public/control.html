@@ -53,6 +53,9 @@
     <section class="card wide system-card">
       <div class="system-row">
         <div class="status" id="status">Ready.</div>
+        <label class="diamond-pick">Diamante
+          <select data-path="upcoming.diamond" id="diamond-select"></select>
+        </label>
         <div class="mobile-link" id="mobile-link" title="Abrir en el celular (misma red WiFi)"></div>
         <label>NDI source
           <input data-path="ndi.sourceName">
@@ -329,9 +332,6 @@
           <label>Upcoming input # <input data-path="vmix.upcomingInput" placeholder="Example: 16"></label>
           <label>Title <input data-path="upcoming.title"></label>
           <label>Subtitle <input data-path="upcoming.subtitle"></label>
-          <label>Diamante en el que estamos
-            <select data-path="upcoming.diamond" id="diamond-select"></select>
-          </label>
           <label>Show games
             <select data-path="upcoming.count">
               <option value="1">1 game</option>

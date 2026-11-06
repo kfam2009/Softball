@@ -420,7 +420,7 @@ function fillDiamondSelect() {
   const diamonds = Array.isArray(state.excel?.diamonds) ? state.excel.diamonds : [];
   const current = state.upcoming?.diamond || "";
   const list = current && !diamonds.includes(current) ? [...diamonds, current] : diamonds;
-  select.innerHTML = `<option value="">${diamonds.length ? "Todos" : "Sin hoja DIAMANTES"}</option>` +
+  select.innerHTML = `<option value="">${diamonds.length ? "Elegir…" : "Sin hoja DIAMANTES"}</option>` +
     list.map(name => `<option value="${escAttr(name)}">${escAttr(name)}</option>`).join("");
   select.value = current;
   const hint = document.getElementById("fixture-hint");
@@ -441,6 +441,12 @@ async function loadUpcomingFromFixture() {
   applyRemoteState(payload.state, "");
   setStatus(`Upcoming: ${payload.loaded} partido(s) cargados del fixture (según ${payload.mode}).`);
 }
+
+document.getElementById("diamond-select")?.addEventListener("change", () => {
+  // Al cambiar de diamante, el Upcoming se recarga solo con los partidos de ese diamante.
+  if (!(state.excel?.fixture || []).length) return;
+  setTimeout(() => loadUpcomingFromFixture().catch(error => setStatus(error.message, true)), 50);
+});
 
 document.getElementById("upcoming-from-fixture")?.addEventListener("click", () => loadUpcomingFromFixture().catch(error => setStatus(error.message, true)));
 

@@ -53,7 +53,7 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 
 ## Fixture y Upcoming
 - Hoja **FIXTURE** con encabezados **FECHA** (opcional), **HORA**, **LOCAL**, **VISITANTE**, **DIAMANTE** (en cualquier orden). Hoja **DIAMANTES** con la lista de diamantes (columna A).
-- En la pestaña **Upcoming**: elegir **Diamante en el que estamos** y apretar **Cargar del fixture**. Toma los partidos de hoy de ese diamante que siguen al partido actual (el de Teams & Score); si el partido actual no está en el fixture, usa la hora de la PC. Carga hasta 3 (según "Show games"); el resto se edita a mano.
+- Arriba del panel, en **Diamante**, elegir en qué diamante se está transmitiendo: el Upcoming se carga solo con los partidos de ese diamante (también con el botón **Cargar del fixture** en la pestaña Upcoming). Toma los partidos de hoy de ese diamante que siguen al partido actual (el de Teams & Score); si el partido actual no está en el fixture, usa la hora de la PC. Carga hasta 3 (según "Show games"); el resto se edita a mano.
 
 ## Celular (solo scorebug)
 Desde un celular en la misma red (WiFi o **ZeroTier**) abrir `http://IP-DE-LA-PC:8136/m`. En el panel de la PC, arriba a la derecha, aparece la dirección (la de ZeroTier primero); tocándola muestra un **QR** para escanear. La página del celular muestra el nombre de la PC a la que está conectada, así no se confunde si hay dos PCs con el panel en la misma red.

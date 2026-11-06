@@ -2233,3 +2233,10 @@ textarea {
   display: flex;
   gap: 6px;
 }
+
+.diamond-pick select {
+  min-width: 170px;
+  font-weight: 900;
+  background: #ffc83d;
+  color: #10151b;
+}
