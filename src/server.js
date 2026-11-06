@@ -9,7 +9,30 @@ const publicRoot = path.join(root, "public");
 const dataRoot = path.join(root, "data");
 const statePath = path.join(dataRoot, "state.json");
 // Datos.xlsx va en la carpeta que contiene softball-ndi (ej: Videos\\Softball2026\\Datos.xlsx).
-const excelPath = process.env.SB_EXCEL || [path.resolve(root, "..", "Datos.xlsx"), path.join(root, "Datos.xlsx")].find(file => fs.existsSync(file)) || path.join(root, "Datos.xlsx");
+const configPath = path.join(root, "data", "config.json");
+
+function readConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(configPath, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function writeConfig(config) {
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+}
+
+// Orden: variable SB_EXCEL > ruta elegida en el panel > carpeta de arriba > carpeta del panel.
+function getExcelPath() {
+  if (process.env.SB_EXCEL) return { path: process.env.SB_EXCEL, source: "variable SB_EXCEL" };
+  const configured = readConfig().excelPath;
+  if (configured) return { path: configured, source: "elegida en el panel" };
+  const candidates = [path.resolve(root, "..", "Datos.xlsx"), path.join(root, "Datos.xlsx")];
+  const found = candidates.find(file => fs.existsSync(file));
+  return { path: found || candidates[1], source: found ? "automática" : "automática (no encontrada)" };
+}
 const codexPython = "C:\\Users\\claud\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe";
 const pythonPath = process.env.PYTHON || (fs.existsSync(codexPython) ? codexPython : "python");
 const replayPanelRoot = process.env.REPLAY_PANEL_ROOT || "C:\\Users\\claud\\Videos\\Panel Replay";
@@ -150,7 +173,7 @@ const undoStack = [];
 // ---------- Logos ----------
 // Carpeta "Logos" al lado del Datos.xlsx (o la de SB_LOGOS). Cualquier imagen ahi aparece en el panel.
 function logosDir() {
-  const dir = process.env.SB_LOGOS || path.join(path.dirname(excelPath), "Logos");
+  const dir = process.env.SB_LOGOS || path.join(path.dirname(getExcelPath().path), "Logos");
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -432,9 +455,23 @@ async function openReplayPanel(res) {
 function readExcelData() {
   return new Promise((resolve, reject) => {
     const script = path.join(root, "excel_import.py");
-    childProcess.execFile(pythonPath, [script, excelPath], { encoding: "utf8" }, (error, stdout, stderr) => {
+    const excel = getExcelPath().path;
+    if (!fs.existsSync(excel)) {
+      reject(new Error(`No encuentro el Excel en ${excel}. Elegí la ruta o subilo desde el panel (arriba, "Excel").`));
+      return;
+    }
+    childProcess.execFile(pythonPath, [script, excel], { encoding: "utf8" }, (error, stdout, stderr) => {
       if (error) {
-        reject(new Error(stderr || error.message));
+        const text = `${stderr || ""} ${error.message || ""}`;
+        if (error.code === "ENOENT" || /not recognized|no se reconoce|cannot find|was not found/i.test(text)) {
+          reject(new Error("No encuentro Python en esta PC. Instalalo desde python.org (tildá \"Add to PATH\") y reiniciá el panel."));
+        } else if (/No module named ['"]?openpyxl/i.test(text)) {
+          reject(new Error("Falta la librería openpyxl. Abrí una consola y corré: python -m pip install openpyxl (o ejecutá INSTALAR.cmd)."));
+        } else if (/Permission denied|PermissionError/i.test(text)) {
+          reject(new Error("No pude abrir el Excel: puede estar abierto y bloqueado. Cerralo y volvé a intentar."));
+        } else {
+          reject(new Error(stderr || error.message));
+        }
         return;
       }
       try {
@@ -693,6 +730,55 @@ function createServer() {
 
     if (req.method === "POST" && url.pathname === "/api/replay/open") {
       return openReplayPanel(res);
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/excel-info") {
+      const info = getExcelPath();
+      return sendJson(res, { ok: true, path: info.path, source: info.source, exists: fs.existsSync(info.path) });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/excel-path") {
+      let raw = "";
+      req.on("data", chunk => raw += chunk);
+      req.on("end", () => {
+        try {
+          const body = JSON.parse(raw || "{}");
+          const target = String(body.path || "").trim().replace(/^"+|"+$/g, "");
+          const config = readConfig();
+          if (!target) {
+            delete config.excelPath;
+          } else {
+            if (!/\.xlsx$/i.test(target)) throw new Error("Tiene que ser un archivo .xlsx");
+            if (!fs.existsSync(target)) throw new Error(`No existe: ${target}`);
+            config.excelPath = path.resolve(target);
+          }
+          writeConfig(config);
+          const info = getExcelPath();
+          sendJson(res, { ok: true, path: info.path, source: info.source, exists: fs.existsSync(info.path) });
+        } catch (error) {
+          sendJson(res, { ok: false, error: error.message }, 400);
+        }
+      });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/excel-upload") {
+      const chunks = [];
+      req.on("data", chunk => chunks.push(chunk));
+      req.on("end", () => {
+        try {
+          const buffer = Buffer.concat(chunks);
+          if (buffer.length < 100 || buffer.slice(0, 2).toString() !== "PK") throw new Error("No parece un archivo .xlsx válido.");
+          const target = getExcelPath().path;
+          if (fs.existsSync(target)) fs.copyFileSync(target, target.replace(/\.xlsx$/i, " (anterior).xlsx"));
+          fs.mkdirSync(path.dirname(target), { recursive: true });
+          fs.writeFileSync(target, buffer);
+          sendJson(res, { ok: true, path: target, exists: true });
+        } catch (error) {
+          sendJson(res, { ok: false, error: error.message }, 400);
+        }
+      });
+      return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/logos") {

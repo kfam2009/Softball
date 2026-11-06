@@ -442,6 +442,49 @@ async function loadUpcomingFromFixture() {
   setStatus(`Upcoming: ${payload.loaded} partido(s) cargados del fixture (según ${payload.mode}).`);
 }
 
+async function refreshExcelInfo() {
+  const el = document.getElementById("excel-path");
+  if (!el) return;
+  const info = await fetch("/api/excel-info", { cache: "no-store" }).then(r => r.json());
+  el.innerHTML = `Excel <b class="${info.exists ? "ok" : "bad"}">${info.exists ? "✓" : "✗ no encontrado"}</b> <code>${escAttr(info.path)}</code> <small>(${escAttr(info.source)})</small>`;
+}
+
+document.getElementById("excel-change")?.addEventListener("click", async () => {
+  const value = window.prompt("Ruta completa del Excel (en el Explorador: clic derecho sobre el archivo > Copiar como ruta, y pegala acá).\nDejá vacío para volver a la búsqueda automática.", "");
+  if (value === null) return;
+  try {
+    const response = await fetch("/api/excel-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: value }) });
+    const payload = await response.json();
+    if (!payload.ok) throw new Error(payload.error);
+    await refreshExcelInfo();
+    await importExcelData();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
+
+document.getElementById("excel-upload")?.addEventListener("click", () => {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      setStatus(`Subiendo ${file.name}...`);
+      const response = await fetch("/api/excel-upload", { method: "POST", body: file });
+      const payload = await response.json();
+      if (!payload.ok) throw new Error(payload.error);
+      await refreshExcelInfo();
+      await importExcelData();
+      setStatus(`Excel guardado en ${payload.path} y sincronizado.`);
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  });
+  input.click();
+});
+
 document.getElementById("diamond-select")?.addEventListener("change", () => {
   // Al cambiar de diamante, el Upcoming se recarga solo con los partidos de ese diamante.
   if (!(state.excel?.fixture || []).length) return;
@@ -765,6 +808,7 @@ fetch("/api/network").then(r => r.json()).then(data => {
 }).catch(() => {});
 
 load()
+  .then(() => refreshExcelInfo().catch(() => {}))
   .then(() => loadLogos().catch(error => setStatus(error.message, true)))
   .then(connectStateEvents)
   .catch(error => setStatus(error.message, true));

@@ -39,7 +39,7 @@ El scoreboard muestra las **entradas reglamentarias** (7 por defecto; 5 para inf
 5. Arrancar con **`ARRANCAR SOFTBALL.cmd`** y cerrar con **`PARAR SOFTBALL.cmd`** (los dos dentro de la carpeta del panel).
 6. En vMix: input NDI "<NOMBRE-PC> (B5 Scorebug)" en un Overlay.
 
-El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro de la carpeta del panel.
+El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro de la carpeta del panel. Arriba en el panel, la línea **Excel** muestra qué archivo usa y si lo encuentra (✓/✗); con **Cambiar ruta** se pega la ruta de cualquier Excel (Explorador: clic derecho > Copiar como ruta) y con **Subir Excel** se carga el archivo desde el navegador. Si falta Python u openpyxl, el mensaje de Sync Excel lo indica.
 
 ## Arranque
 - `ARRANCAR SOFTBALL.cmd` (o `scripts\START_NDI_SCOREBUG.cmd`). Panel en `http://localhost:8136/control.html`.

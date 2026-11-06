@@ -6,3 +6,4 @@ scripts/streamdeck/shortcuts-exe/
 *.log
 /Datos.xlsx
 /Logos/
+/data/config.json

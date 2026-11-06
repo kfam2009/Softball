@@ -2240,3 +2240,25 @@ textarea {
   background: #ffc83d;
   color: #10151b;
 }
+
+.excel-info {
+  margin: 8px 0 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #10151b;
+}
+
+.excel-info code {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(16, 21, 27, .08);
+  user-select: all;
+  word-break: break-all;
+}
+
+.excel-info .ok { color: #1b8a3d; }
+.excel-info .bad { color: #c62828; }
+.excel-info .logo-upload-btn { margin-top: 0; }
