@@ -104,5 +104,109 @@
     "visible": false,
     "scorebugVisible": false,
     "playerVisible": false
+  },
+  "lineups": {
+    "title": "LINEUP",
+    "subtitle": "Softball 2026",
+    "home": {
+      "text": ""
+    },
+    "away": {
+      "text": ""
+    }
+  },
+  "defense": {
+    "title": "DEFENSE",
+    "subtitle": "Softball 2026",
+    "side": "auto"
+  },
+  "upcoming": {
+    "title": "UPCOMING GAMES",
+    "subtitle": "Softball 2026",
+    "count": "3",
+    "games": [
+      {
+        "away": "",
+        "home": "",
+        "time": "",
+        "court": "Diamante 1",
+        "round": "",
+        "status": "Next"
+      },
+      {
+        "away": "",
+        "home": "",
+        "time": "",
+        "court": "Diamante 1",
+        "round": "",
+        "status": "Game 2"
+      },
+      {
+        "away": "",
+        "home": "",
+        "time": "",
+        "court": "Diamante 1",
+        "round": "",
+        "status": "Game 3"
+      }
+    ],
+    "diamond": ""
+  },
+  "ads": {
+    "full": {
+      "visible": false,
+      "index": 0,
+      "startedAt": 0,
+      "seconds": 8,
+      "mode": "loop"
+    },
+    "zocalo": {
+      "visible": false,
+      "index": 0,
+      "startedAt": 0,
+      "seconds": 10,
+      "mode": "loop",
+      "hideScorebug": true
+    },
+    "files": {
+      "full": [
+        {
+          "file": "Publicidad_Coccia_1920x1080.png",
+          "label": "Coccia",
+          "src": "ads/Publicidad_Coccia_1920x1080.png"
+        },
+        {
+          "file": "Publicidad_Mancini_1920x1080.png",
+          "label": "Mancini",
+          "src": "ads/Publicidad_Mancini_1920x1080.png"
+        },
+        {
+          "file": "Publicidad_Ravens_1920x1080.png",
+          "label": "Ravens",
+          "src": "ads/Publicidad_Ravens_1920x1080.png"
+        }
+      ],
+      "zocalos": [
+        {
+          "file": "Zocalo_Coccia_1920x1080.png",
+          "label": "Coccia",
+          "src": "ads/Zocalos/Zocalo_Coccia_1920x1080.png"
+        },
+        {
+          "file": "Zocalo_Mancini_1920x1080.png",
+          "label": "Mancini",
+          "src": "ads/Zocalos/Zocalo_Mancini_1920x1080.png"
+        },
+        {
+          "file": "Zocalo_Ravens_1920x1080.png",
+          "label": "Ravens",
+          "src": "ads/Zocalos/Zocalo_Ravens_1920x1080.png"
+        }
+      ]
+    }
+  },
+  "excel": {
+    "home": [],
+    "away": []
   }
 }

@@ -99,7 +99,7 @@
         flash(`Jog: ${jogModeLabel()}`);
       }
     },
-    { id: "replay-speed", group: "Replay", label: "Velocidad del replay (fader)", hint: "Fader 8", kind: "absolute" },
+    { id: "replay-speed", group: "Replay", label: "Velocidad del replay (fader, cambia gradual)", hint: "Fader 8", kind: "absolute" },
     ...Array.from({ length: 4 }, (_, i) => ({
       id: `replay-angle${i + 1}`, group: "Replay", label: `Ángulo de replay ${i + 1}`, hint: `R ${i + 1}`,
       run: () => callVmix([vmix(`ReplayACamera${i + 1}`, { Input: replayInput() })], `Replay: ángulo ${i + 1}`)
@@ -183,20 +183,57 @@
     }
   }
 
-  function onSpeed(value) {
-    speedValue = Math.max(0.05, Math.round((value / 127) * 100) / 100);
-    clearTimeout(speedTimer);
-    speedTimer = setTimeout(() => {
-      callVmix([{ Function: "ReplaySetSpeed", Input: replayInput(), Channel: "Current", Value: speedValue }], `Replay velocidad ${Math.round(speedValue * 100)}%`)
+  // Velocidad del replay: el fader marca el objetivo y la velocidad va hacia ahi de a poco (sin saltos).
+  let speedTarget = null;
+  let speedCurrent = null;
+  let speedSent = null;
+  let speedRamp = null;
+  const absoluteKeys = new Set();  // controles que ya mandaron valores de fader (no de perilla)
+  const SPEED_MIN = 0.05;
+  const SPEED_STEP = 0.03;      // cambio maximo por paso
+  const SPEED_TICK = 50;        // ms entre pasos  (=> ~0.6 de velocidad por segundo)
+
+  function setSpeedTarget(target) {
+    speedTarget = Math.max(SPEED_MIN, Math.min(1, target));
+    if (speedCurrent === null) speedCurrent = speedTarget;
+    if (!speedRamp) speedRamp = setInterval(stepSpeed, SPEED_TICK);
+  }
+
+  function stepSpeed() {
+    const diff = speedTarget - speedCurrent;
+    speedCurrent = Math.abs(diff) <= SPEED_STEP ? speedTarget : speedCurrent + Math.sign(diff) * SPEED_STEP;
+    const value = Math.round(speedCurrent * 100) / 100;
+    if (value !== speedSent) {
+      speedSent = value;
+      callVmix([{ Function: "ReplaySetSpeed", Input: replayInput(), Channel: "Current", Value: value }], `Replay velocidad ${Math.round(value * 100)}%`)
         .catch(error => flash(error.message, true));
-    }, 60);
+    }
+    if (speedCurrent === speedTarget) {
+      clearInterval(speedRamp);
+      speedRamp = null;
+    }
+  }
+
+  function onSpeed(msg) {
+    if (msg.type === "pb") return setSpeedTarget(msg.value / 16383);      // fader en modo Mackie (14 bits)
+    const delta = relativeDelta(msg.value);
+    if (msg.type === "cc" && !(msg.value >= 1 && msg.value <= 15) && !(msg.value >= 65 && msg.value <= 79)) absoluteKeys.add(msg.key);
+    if (msg.type === "cc" && msg.relativeHint && delta && !absoluteKeys.has(msg.key)) { // perilla: sube/baja de a poco
+      return setSpeedTarget((speedTarget ?? 1) + delta * 0.02);
+    }
+    return setSpeedTarget(msg.value / 127);                               // fader comun (CC 0-127)
   }
 
   // ---------- MIDI ----------
   function keyFor(data) {
     const status = data[0] & 0xf0;
     const channel = (data[0] & 0x0f) + 1;
-    if (status === 0xb0) return { key: `cc:${channel}:${data[1]}`, value: data[2], isPress: data[2] > 0, label: `CC ${data[1]} (canal ${channel})` };
+    if (status === 0xb0) return { type: "cc", key: `cc:${channel}:${data[1]}`, value: data[2], isPress: data[2] > 0, relativeHint: (data[2] >= 1 && data[2] <= 15) || (data[2] >= 65 && data[2] <= 79), label: `CC ${data[1]} (canal ${channel})` };
+    if (status === 0xe0) {
+      // Fader en modo Mackie: pitch bend de 14 bits por canal.
+      const value = (data[2] << 7) | data[1];
+      return { type: "pb", key: `pb:${channel}`, value, isPress: false, label: `Fader ${channel} (pitch bend)` };
+    }
     if (status === 0x90) return { key: `note:${channel}:${data[1]}`, value: data[2], isPress: data[2] > 0, label: `Nota ${data[1]} (canal ${channel})` };
     if (status === 0x80) return { key: `note:${channel}:${data[1]}`, value: 0, isPress: false, label: `Nota ${data[1]} off` };
     return null;
@@ -233,7 +270,7 @@
     const action = byId[actionId];
     if (!action) return;
     if (action.kind === "relative") return onJog(msg.value);
-    if (action.kind === "absolute") return onSpeed(msg.value);
+    if (action.kind === "absolute") return onSpeed(msg);
     if (!msg.isPress) return;
     Promise.resolve().then(() => action.run()).catch(error => flash(error.message, true));
   }
@@ -250,6 +287,7 @@
     const entry = Object.entries(config.bindings).find(([, v]) => v === actionId);
     if (!entry) return "";
     const [type, ch, num] = entry[0].split(":");
+    if (type === "pb") return `Fader ${ch}`;
     return `${type === "cc" ? "CC" : "Nota"} ${num}${ch !== "1" ? ` · c${ch}` : ""}`;
   }
 
