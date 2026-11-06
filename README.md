@@ -66,7 +66,8 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 - **Asistente de configuración**: va pidiendo cada acción ("apretá el botón para Cámara 1…"); se puede saltear. También **Aprender** y **Probar** por acción. Las asignaciones se guardan en `data/midi.json` (por PC).
 - **Cámaras**: Cut directo al input de vMix configurado (Cámara 1–8 → input).
 - **Replay (vMix)**: Mark In, Mark Out, Último replay al aire (lo reproduce y corta al input de replay), Play/Pausa, Live, ángulos 1–4, **fader** de velocidad.
-- **Jog**: mueve el replay cuadro a cuadro con aceleración; con "Cambiar modo del jog" alterna **Posición / Punto In / Punto Out** del evento seleccionado.
+- **Replay de los últimos 10 s / 15 s**: crea el replay y lo deja seleccionado. Mark Out también deja seleccionado el replay recién marcado.
+- **Jog**: por defecto **corre el comienzo (Punto In) del replay seleccionado**, cuadro a cuadro con aceleración. Con "Cambiar modo del jog" alterna **Punto In / Punto Out / Posición**.
 - **Juego y gráficos**: Ball, Strike, Foul, Out, Carrera, Hit, Error, Cambio de lado, bases, Conteo 0-0, Deshacer, Scorebug / Zócalo / Publicidad In-Out.
 
 ## Celular (solo scorebug)

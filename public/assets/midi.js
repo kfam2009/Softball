@@ -12,7 +12,8 @@
     bindings: {},          // "cc:1:46" -> actionId
     cameras: ["1", "2", "3", "4", "5", "", "", ""],
     replayInput: "6",
-    jogMode: "position",   // position | in | out
+    jogMode: "in",         // in (por defecto: corre el comienzo del replay seleccionado) | out | position
+    jogDefaultV2: true,
     jogStep: 1
   };
   let midiAccess = null;
@@ -42,7 +43,20 @@
       }
     })),
     { id: "replay-markin", group: "Replay", label: "Mark In", hint: "Marker SET", run: () => callVmix([vmix("ReplayMarkIn", { Input: replayInput() })], "Replay: Mark In") },
-    { id: "replay-markout", group: "Replay", label: "Mark Out", hint: "Marker ◀", run: () => callVmix([vmix("ReplayMarkOut", { Input: replayInput() })], "Replay: Mark Out") },
+    {
+      id: "replay-markout", group: "Replay", label: "Mark Out (queda seleccionado)", hint: "Marker ◀",
+      run: () => callVmix([
+        vmix("ReplayMarkOut", { Input: replayInput() }),
+        vmix("ReplaySelectLastEvent", { Input: replayInput(), Channel: "Current" })
+      ], "Replay: Mark Out (seleccionado)")
+    },
+    ...[10, 15].map(seconds => ({
+      id: `replay-last${seconds}`, group: "Replay", label: `Replay de los últimos ${seconds} s (queda seleccionado)`, hint: seconds === 10 ? "R 5" : "R 6",
+      run: () => callVmix([
+        vmix("ReplayMarkInOutLive", { Input: replayInput(), Value: seconds }),
+        vmix("ReplaySelectLastEvent", { Input: replayInput(), Channel: "Current" })
+      ], `Replay de ${seconds} s creado y seleccionado`)
+    })),
     {
       id: "replay-air", group: "Replay", label: "Último replay al aire", hint: "Marker ▶",
       run: () => callVmix([
@@ -52,11 +66,11 @@
     },
     { id: "replay-playpause", group: "Replay", label: "Play / Pausa replay", hint: "▶ Play", run: () => callVmix([vmix("ReplayPlayPause", { Input: replayInput(), Channel: "Current" })], "Replay: Play/Pausa") },
     { id: "replay-live", group: "Replay", label: "Replay a vivo (Live)", hint: "Cycle", run: () => callVmix([vmix("ReplayLive", { Input: replayInput() })], "Replay: Live") },
-    { id: "replay-jog", group: "Replay", label: "Jog (mueve el replay)", hint: "Rueda jog", kind: "relative" },
+    { id: "replay-jog", group: "Replay", label: "Jog (corre el comienzo del replay seleccionado)", hint: "Rueda jog", kind: "relative" },
     {
-      id: "replay-jogmode", group: "Replay", label: "Cambiar modo del jog (Posición / Punto In / Punto Out)", hint: "Track ▶",
+      id: "replay-jogmode", group: "Replay", label: "Cambiar modo del jog (Punto In / Punto Out / Posición)", hint: "Track ▶",
       run: () => {
-        const order = ["position", "in", "out"];
+        const order = ["in", "out", "position"];
         config.jogMode = order[(order.indexOf(config.jogMode) + 1) % order.length];
         scheduleConfigSave();
         render();
@@ -234,7 +248,13 @@
   // ---------- Config ----------
   async function loadConfig() {
     const data = await fetch("/api/midi", { cache: "no-store" }).then(r => r.json()).catch(() => ({}));
-    config = { ...config, ...(data.config || {}) };
+    const saved = data.config || {};
+    config = { ...config, ...saved };
+    // Configs anteriores arrancaban el jog en "Posicion": ahora por defecto corre el Punto In.
+    if (!saved.jogDefaultV2) {
+      config.jogMode = "in";
+      config.jogDefaultV2 = true;
+    }
     config.bindings ||= {};
     while (config.cameras.length < 8) config.cameras.push("");
   }
@@ -289,7 +309,7 @@
             <label>Jog: cuadros por paso <input id="midi-jog-step" type="number" min="1" max="10" value="${html(config.jogStep)}"></label>
           </div>
           <div class="midi-jog">Modo del jog: <b>${html(jogModeLabel())}</b>
-            ${["position", "in", "out"].map(mode => `<button type="button" class="btn ${config.jogMode === mode ? "" : "secondary"} logo-upload-btn" data-jog-mode="${mode}">${{ position: "Posición", in: "Punto In", out: "Punto Out" }[mode]}</button>`).join("")}
+            ${["in", "out", "position"].map(mode => `<button type="button" class="btn ${config.jogMode === mode ? "" : "secondary"} logo-upload-btn" data-jog-mode="${mode}">${{ position: "Posición", in: "Punto In", out: "Punto Out" }[mode]}</button>`).join("")}
           </div>
         </section>
         <section class="card">
