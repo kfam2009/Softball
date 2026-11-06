@@ -61,6 +61,14 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 - Los zócalos se superponen al juego; por defecto el scorebug se oculta mientras sale el zócalo y vuelve solo (configurable). La publicidad a pantalla completa queda por encima de todo.
 - También en el celular (Publicidad / Zócalo: In, Sig., Out) y en Stream Deck (`AD_IN`, `AD_NEXT`, `AD_OUT`, `ZOCALO_IN`, `ZOCALO_NEXT`, `ZOCALO_OUT`).
 
+## Controlador MIDI (Korg nanoKONTROL Studio u otro)
+- Pestaña **MIDI**. El panel tiene que estar abierto en **Chrome o Edge** en la PC donde está conectado el controlador (el navegador pide permiso de MIDI la primera vez). En vMix: Settings → **Web Controller** activado.
+- **Asistente de configuración**: va pidiendo cada acción ("apretá el botón para Cámara 1…"); se puede saltear. También **Aprender** y **Probar** por acción. Las asignaciones se guardan en `data/midi.json` (por PC).
+- **Cámaras**: Cut directo al input de vMix configurado (Cámara 1–8 → input).
+- **Replay (vMix)**: Mark In, Mark Out, Último replay al aire (lo reproduce y corta al input de replay), Play/Pausa, Live, ángulos 1–4, **fader** de velocidad.
+- **Jog**: mueve el replay cuadro a cuadro con aceleración; con "Cambiar modo del jog" alterna **Posición / Punto In / Punto Out** del evento seleccionado.
+- **Juego y gráficos**: Ball, Strike, Foul, Out, Carrera, Hit, Error, Cambio de lado, bases, Conteo 0-0, Deshacer, Scorebug / Zócalo / Publicidad In-Out.
+
 ## Celular (solo scorebug)
 Desde un celular en la misma red (WiFi o **ZeroTier**) abrir `http://IP-DE-LA-PC:8136/m`. En el panel de la PC, arriba a la derecha, aparece la dirección (la de ZeroTier primero); tocándola muestra un **QR** para escanear. La página del celular muestra el nombre de la PC a la que está conectada, así no se confunde si hay dos PCs con el panel en la misma red.
 Botones: Ball, Strike, Foul, Out, Carrera, Hit, Base por bolas, Conteo 0-0, Error, Cambio de lado, Limpiar bases, **Deshacer**, Scorebug In/Out, bases tocando el diamante y correcciones.

@@ -386,6 +386,41 @@ setInterval(() => {
   } catch {}
 }, 500).unref();
 
+// ---------- vMix (camaras y replay desde el panel / MIDI) ----------
+function vmixSettings() {
+  const config = readConfig();
+  return { host: config.vmixHost || "127.0.0.1", port: Number(config.vmixPort || 8088) };
+}
+
+function vmixCall(params) {
+  const { host, port } = vmixSettings();
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") query.set(key, String(value));
+  }
+  const target = `http://${host}:${port}/api/?${query.toString()}`;
+  return new Promise((resolve, reject) => {
+    const req = http.get(target, response => {
+      let body = "";
+      response.setEncoding("utf8");
+      response.on("data", chunk => body += chunk);
+      response.on("end", () => resolve({ status: response.statusCode, body }));
+    });
+    req.setTimeout(2500, () => req.destroy(new Error(`vMix no responde en ${host}:${port}. En vMix: Settings > Web Controller activado.`)));
+    req.on("error", reject);
+  });
+}
+
+const midiConfigPath = path.join(root, "data", "midi.json");
+
+function readMidiConfig() {
+  try {
+    return JSON.parse(fs.readFileSync(midiConfigPath, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
 // ---------- Upcoming desde el fixture ----------
 function normName(value) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
@@ -886,6 +921,74 @@ function createServer() {
 
     if (req.method === "POST" && url.pathname === "/api/replay/open") {
       return openReplayPanel(res);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/vmix") {
+      let raw = "";
+      req.on("data", chunk => raw += chunk);
+      req.on("end", async () => {
+        try {
+          const body = JSON.parse(raw || "{}");
+          if (body.ping) {
+            const result = await vmixCall({});
+            const version = (/<version>([^<]*)/.exec(result.body) || [])[1] || "";
+            return sendJson(res, { ok: result.status === 200, version });
+          }
+          const calls = Array.isArray(body.calls) ? body.calls : [body];
+          const results = [];
+          for (const call of calls) {
+            if (!call.Function) throw new Error("Falta Function");
+            results.push(await vmixCall(call));
+          }
+          const failed = results.find(result => result.status !== 200);
+          sendJson(res, { ok: !failed, results, error: failed ? failed.body : undefined }, failed ? 502 : 200);
+        } catch (error) {
+          sendJson(res, { ok: false, error: error.message }, 502);
+        }
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/vmix-settings") {
+      return sendJson(res, { ok: true, ...vmixSettings() });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/vmix-settings") {
+      let raw = "";
+      req.on("data", chunk => raw += chunk);
+      req.on("end", () => {
+        try {
+          const body = JSON.parse(raw || "{}");
+          const config = readConfig();
+          config.vmixHost = String(body.host || "127.0.0.1").trim();
+          config.vmixPort = Number(body.port || 8088);
+          writeConfig(config);
+          sendJson(res, { ok: true, ...vmixSettings() });
+        } catch (error) {
+          sendJson(res, { ok: false, error: error.message }, 400);
+        }
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/midi") {
+      return sendJson(res, { ok: true, config: readMidiConfig() });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/midi") {
+      let raw = "";
+      req.on("data", chunk => raw += chunk);
+      req.on("end", () => {
+        try {
+          const config = JSON.parse(raw || "{}");
+          fs.mkdirSync(path.dirname(midiConfigPath), { recursive: true });
+          fs.writeFileSync(midiConfigPath, JSON.stringify(config, null, 2));
+          sendJson(res, { ok: true });
+        } catch (error) {
+          sendJson(res, { ok: false, error: error.message }, 400);
+        }
+      });
+      return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/ads") {

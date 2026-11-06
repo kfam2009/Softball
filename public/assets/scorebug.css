@@ -2342,3 +2342,44 @@ textarea {
 }
 
 .ad-status.ad-on-air { color: #c62828; }
+
+/* ---------- Panel: MIDI ---------- */
+.midi-status { margin: 6px 0; font-size: 15px; }
+.midi-status .ok { color: #1b8a3d; }
+.midi-status .bad { color: #c62828; }
+.midi-monitor { font-size: 13px; color: #10151b; }
+.midi-monitor code { padding: 2px 6px; border-radius: 4px; background: rgba(16, 21, 27, .08); }
+.midi-flash { margin-left: 8px; font-weight: 900; color: #1b8a3d; }
+.midi-flash.error { color: #c62828; }
+.midi-learn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #ffc83d;
+  color: #10151b;
+  font-size: 15px;
+}
+.midi-learn .logo-upload-btn { margin-top: 0; }
+.midi-jog { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; color: #10151b; }
+.midi-jog .logo-upload-btn { margin-top: 0; }
+.midi-group { margin: 12px 0 4px; font-size: 13px; text-transform: uppercase; color: #10151b; opacity: .7; }
+.midi-list { display: grid; gap: 4px; }
+.midi-row {
+  display: grid;
+  grid-template-columns: 1fr 96px 84px 70px;
+  gap: 6px;
+  align-items: center;
+  padding: 3px 6px;
+  border-radius: 6px;
+  color: #10151b;
+  font-size: 13px;
+  font-weight: 700;
+}
+.midi-row:nth-child(odd) { background: rgba(16, 21, 27, .05); }
+.midi-row.learning { background: #ffc83d; }
+.midi-row code { font-size: 12px; }
+.midi-row .logo-upload-btn { margin-top: 0; }
