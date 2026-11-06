@@ -46,9 +46,9 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 - Para cerrar: `PARAR SOFTBALL.cmd` o `scripts\STOP_NDI_SCOREBUG.cmd`.
 
 ## Logos y equipos
-- **Carpeta `Logos`** al lado del `Datos.xlsx` (se crea sola). Cualquier imagen PNG/JPG/WEBP/SVG/GIF que se copie ahí aparece en los selectores de logo del panel (también quedan los logos que trae el panel).
+- **Carpeta `Logos`** al lado del `Datos.xlsx` (se crea sola). Cualquier imagen PNG/JPG/WEBP/SVG/GIF que se copie ahí aparece en los selectores de logo del panel.
 - **Subir logo**: botón debajo de cada selector de logo; guarda la imagen en la carpeta `Logos` y la asigna al equipo.
-- **Borrar este** quita el logo elegido; **Borrar logos del torneo** vacía la carpeta `Logos` para cargar los del torneo siguiente. No se pierden: quedan en `Logos\_anteriores\<fecha>`. Los logos que trae el panel no se borran.
+- **Borrar logos** elimina todos los logos de la carpeta `Logos` (salen de la lista y los equipos quedan sin logo), para cargar los del torneo siguiente.
 - **Hoja `EQUIPOS`** (opcional) en el Excel: A Nombre, B Sigla, C Color (#hex), D Logo (nombre del archivo en `Logos`, con o sin extensión). En el panel, "equipo (Excel)" completa nombre, sigla, color y logo de una. Después de editar el Excel, **Sync Excel**.
 
 ## Celular (solo scorebug)

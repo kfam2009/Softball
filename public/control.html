@@ -460,14 +460,12 @@
             <select data-path="match.teams.away.logo"></select>
             <span class="logo-tools">
               <button type="button" class="btn secondary logo-upload-btn" data-logo-upload="away">Subir logo</button>
-              <button type="button" class="btn secondary logo-upload-btn" data-logo-delete="away">Borrar este</button>
             </span>
           </label>
           <label>Home logo
             <select data-path="match.teams.home.logo"></select>
             <span class="logo-tools">
               <button type="button" class="btn secondary logo-upload-btn" data-logo-upload="home">Subir logo</button>
-              <button type="button" class="btn secondary logo-upload-btn" data-logo-delete="home">Borrar este</button>
             </span>
           </label>
           <label>Away line <input data-path="match.teams.away.line" placeholder="0,2,0,1,0,0,0"></label>
@@ -486,7 +484,7 @@
           <button class="btn secondary" data-action="away-plus">Away +</button>
           <button class="btn secondary" data-action="home-minus">Home -</button>
           <button class="btn secondary" data-action="home-plus">Home +</button>
-          <button class="btn secondary" type="button" id="logos-clear">Borrar logos del torneo</button>
+          <button class="btn danger" type="button" id="logos-clear">Borrar logos</button>
           <button class="btn danger" data-action="game-reset" data-confirm="Reiniciar el partido? Se borran carreras, hits, errores y line score.">Nuevo partido</button>
         </div>
       </section>
