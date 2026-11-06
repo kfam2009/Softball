@@ -65,7 +65,7 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 - Pestaña **MIDI**. El panel tiene que estar abierto en **Chrome o Edge** en la PC donde está conectado el controlador (el navegador pide permiso de MIDI la primera vez). En vMix: Settings → **Web Controller** activado.
 - **Asistente de configuración**: va pidiendo cada acción ("apretá el botón para Cámara 1…"); se puede saltear. También **Aprender** y **Probar** por acción. Las asignaciones se guardan en `data/midi.json` (por PC).
 - **Cámaras**: Cut directo al input de vMix configurado (Cámara 1–8 → input).
-- **Replay (vMix)**: Mark In, Mark Out, Play evento seleccionado al aire (igual que el Play del panel de replay de vMix: usa la transición/stinger configurada en el replay), Play/Pausa, Live, ángulos 1–4, **fader** de velocidad.
+- **Replay (vMix)**: Mark In, Mark Out, Play evento seleccionado al aire (igual que el Play del panel de replay de vMix: usa la transición/stinger configurada en el replay), **Stop replay** (vuelve con Stinger 1 o 2 a la cámara que estaba al aire antes del replay y frena el replay), Play/Pausa, Live, ángulos 1–4, **fader** de velocidad.
 - **Replay de los últimos 10 s / 15 s**: crea el replay y lo deja seleccionado. Mark Out también deja seleccionado el replay recién marcado.
 - **Jog**: por defecto **corre el comienzo (Punto In) del replay seleccionado**, cuadro a cuadro con aceleración. Con "Cambiar modo del jog" alterna **Punto In / Punto Out / Posición**.
 - **Juego y gráficos**: Ball, Strike, Foul, Out, Carrera, Hit, Error, Cambio de lado, bases, Conteo 0-0, Deshacer, Scorebug / Zócalo / Publicidad In-Out.

@@ -932,7 +932,8 @@ function createServer() {
           if (body.ping) {
             const result = await vmixCall({});
             const version = (/<version>([^<]*)/.exec(result.body) || [])[1] || "";
-            return sendJson(res, { ok: result.status === 200, version });
+            const active = (/<active>([^<]*)/.exec(result.body) || [])[1] || "";
+            return sendJson(res, { ok: result.status === 200, version, active });
           }
           const calls = Array.isArray(body.calls) ? body.calls : [body];
           const results = [];

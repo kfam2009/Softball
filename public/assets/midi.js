@@ -14,6 +14,8 @@
     replayInput: "6",
     jogMode: "in",         // in (por defecto: corre el comienzo del replay seleccionado) | out | position
     jogDefaultV2: true,
+    stinger: "1",          // transicion para entrar/salir: 1 o 2 (Stinger de vMix)
+    returnDelay: 1200,     // ms despues del stinger para frenar el replay
     jogStep: 1
   };
   let midiAccess = null;
@@ -28,6 +30,8 @@
   let speedValue = null;
   let liveState = null;
   let lastAssigned = { key: "", time: 0 };
+  let lastCameraInput = "";   // ultima camara cortada desde el controlador
+  let returnInput = "";       // camara que estaba al aire antes del replay
 
   // ---------- Acciones ----------
   const vmix = (Function, extra = {}) => ({ Function, ...extra });
@@ -39,6 +43,7 @@
       run: () => {
         const input = config.cameras[i];
         if (!input) throw new Error(`Cámara ${i + 1} sin input de vMix asignado (pestaña MIDI).`);
+        lastCameraInput = input;
         return callVmix([vmix("CutDirect", { Input: input })], `Cámara ${i + 1} al aire (input ${input})`);
       }
     })),
@@ -61,9 +66,25 @@
       // Igual que el Play del panel de replay de vMix: reproduce el evento seleccionado
       // y lo manda al aire con la transicion configurada en el replay de vMix (stinger).
       id: "replay-air", group: "Replay", label: "Play evento seleccionado al aire (con stinger de vMix)", hint: "Marker ▶",
-      run: () => callVmix([
-        vmix("ReplayPlaySelectedEventToOutput", { Input: replayInput(), Channel: "Current" })
-      ], "Replay al aire (evento seleccionado)")
+      run: async () => {
+        await rememberActive();
+        return callVmix([
+          vmix("ReplayPlaySelectedEventToOutput", { Input: replayInput(), Channel: "Current" })
+        ], "Replay al aire (evento seleccionado)");
+      }
+    },
+    {
+      // Vuelve a la camara que estaba antes del replay con el stinger y frena el replay.
+      id: "replay-stop", group: "Replay", label: "Stop replay: volver a cámara con stinger", hint: "■ Stop",
+      run: async () => {
+        const target = returnInput || lastCameraInput || config.cameras.find(Boolean);
+        if (!target) throw new Error("No sé a qué cámara volver: cortá una cámara primero.");
+        await callVmix([vmix(`Stinger${config.stinger === "2" ? 2 : 1}`, { Input: target })], `Volviendo a input ${target} con stinger ${config.stinger}`);
+        setTimeout(() => {
+          callVmix([vmix("ReplayStopEvents", { Input: replayInput() })], "Replay detenido").catch(error => flash(error.message, true));
+        }, Number(config.returnDelay || 1200));
+        returnInput = "";
+      }
     },
     { id: "replay-playpause", group: "Replay", label: "Play / Pausa replay", hint: "▶ Play", run: () => callVmix([vmix("ReplayPlayPause", { Input: replayInput(), Channel: "Current" })], "Replay: Play/Pausa") },
     { id: "replay-live", group: "Replay", label: "Replay a vivo (Live)", hint: "Cycle", run: () => callVmix([vmix("ReplayLive", { Input: replayInput() })], "Replay: Live") },
@@ -99,6 +120,14 @@
 
   function jogModeLabel() {
     return { position: "Posición", in: "Punto In", out: "Punto Out" }[config.jogMode] || "Posición";
+  }
+
+  async function rememberActive() {
+    try {
+      const response = await fetch("/api/vmix", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ping: true }) });
+      const payload = await response.json();
+      if (payload.ok && payload.active && payload.active !== String(config.replayInput)) returnInput = payload.active;
+    } catch {}
   }
 
   async function callVmix(calls, label) {
@@ -308,6 +337,12 @@
             ${config.cameras.map((value, i) => `<label>Cámara ${i + 1} → input <input data-midi-camera="${i}" value="${html(value)}" placeholder="-"></label>`).join("")}
             <label>Replay → input <input id="midi-replay-input" value="${html(config.replayInput)}"></label>
             <label>Jog: cuadros por paso <input id="midi-jog-step" type="number" min="1" max="10" value="${html(config.jogStep)}"></label>
+            <label>Stop replay: transición
+              <select id="midi-stinger">
+                <option value="1" ${config.stinger !== "2" ? "selected" : ""}>Stinger 1</option>
+                <option value="2" ${config.stinger === "2" ? "selected" : ""}>Stinger 2</option>
+              </select>
+            </label>
           </div>
           <div class="midi-jog">Modo del jog: <b>${html(jogModeLabel())}</b>
             ${["in", "out", "position"].map(mode => `<button type="button" class="btn ${config.jogMode === mode ? "" : "secondary"} logo-upload-btn" data-jog-mode="${mode}">${{ position: "Posición", in: "Punto In", out: "Punto Out" }[mode]}</button>`).join("")}
@@ -378,6 +413,7 @@
       scheduleConfigSave();
     }));
     root.querySelector("#midi-replay-input")?.addEventListener("change", event => { config.replayInput = event.target.value.trim(); scheduleConfigSave(); });
+    root.querySelector("#midi-stinger")?.addEventListener("change", event => { config.stinger = event.target.value; scheduleConfigSave(); });
     root.querySelector("#midi-jog-step")?.addEventListener("change", event => { config.jogStep = Math.max(1, Number(event.target.value) || 1); scheduleConfigSave(); });
     root.querySelectorAll("[data-jog-mode]").forEach(button => button.addEventListener("click", () => {
       config.jogMode = button.dataset.jogMode;
