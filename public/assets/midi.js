@@ -58,11 +58,12 @@
       ], `Replay de ${seconds} s creado y seleccionado`)
     })),
     {
-      id: "replay-air", group: "Replay", label: "Último replay al aire", hint: "Marker ▶",
+      // Igual que el Play del panel de replay de vMix: reproduce el evento seleccionado
+      // y lo manda al aire con la transicion configurada en el replay de vMix (stinger).
+      id: "replay-air", group: "Replay", label: "Play evento seleccionado al aire (con stinger de vMix)", hint: "Marker ▶",
       run: () => callVmix([
-        vmix("ReplayPlayLastEvent", { Input: replayInput(), Channel: "Current" }),
-        vmix("CutDirect", { Input: replayInput() })
-      ], "Replay al aire")
+        vmix("ReplayPlaySelectedEventToOutput", { Input: replayInput(), Channel: "Current" })
+      ], "Replay al aire (evento seleccionado)")
     },
     { id: "replay-playpause", group: "Replay", label: "Play / Pausa replay", hint: "▶ Play", run: () => callVmix([vmix("ReplayPlayPause", { Input: replayInput(), Channel: "Current" })], "Replay: Play/Pausa") },
     { id: "replay-live", group: "Replay", label: "Replay a vivo (Live)", hint: "Cycle", run: () => callVmix([vmix("ReplayLive", { Input: replayInput() })], "Replay: Live") },
