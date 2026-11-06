@@ -16,6 +16,7 @@
     jogDefaultV2: true,
     stinger: "1",          // transicion para entrar/salir: 1 o 2 (Stinger de vMix)
     returnDelay: 1200,     // ms despues del stinger para frenar el replay
+    volumeInputs: ["1", "11"],   // faders de volumen: Volumen 1 (camara 1) y Volumen 2 (musica)
     jogStep: 1
   };
   let midiAccess = null;
@@ -100,6 +101,10 @@
       }
     },
     { id: "replay-speed", group: "Replay", label: "Velocidad del replay (fader, cambia gradual)", hint: "Fader 8", kind: "absolute" },
+    ...[0, 1].map(i => ({
+      id: `volume-${i + 1}`, group: "Audio", hint: `Fader ${i + 1}`, kind: "volume", index: i,
+      get label() { return `Volumen ${i + 1} (fader) → input ${config.volumeInputs?.[i] || "-"}${i === 0 ? " · cámara 1" : " · música"}`; }
+    })),
     ...Array.from({ length: 4 }, (_, i) => ({
       id: `replay-angle${i + 1}`, group: "Replay", label: `Ángulo de replay ${i + 1}`, hint: `R ${i + 1}`,
       run: () => callVmix([vmix(`ReplayACamera${i + 1}`, { Input: replayInput() })], `Replay: ángulo ${i + 1}`)
@@ -224,6 +229,32 @@
     return setSpeedTarget(msg.value / 127);                               // fader comun (CC 0-127)
   }
 
+  // Volumen: el fader manda SetVolume al input configurado (0-100), sin saturar vMix.
+  const volumeState = [{}, {}];
+  function onVolume(index, msg) {
+    const st = volumeState[index];
+    let level;
+    if (msg.type === "pb") level = msg.value / 16383;
+    else {
+      const delta = relativeDelta(msg.value);
+      if (msg.type === "cc" && !(msg.value >= 1 && msg.value <= 15) && !(msg.value >= 65 && msg.value <= 79)) absoluteKeys.add(msg.key);
+      if (msg.type === "cc" && msg.relativeHint && delta && !absoluteKeys.has(msg.key)) level = (st.level ?? 1) + delta * 0.02;
+      else level = msg.value / 127;
+    }
+    st.level = Math.max(0, Math.min(1, level));
+    if (st.timer) return;                     // ya hay un envio programado: manda el ultimo valor
+    const send = () => {
+      const value = Math.round(st.level * 100);
+      const input = config.volumeInputs?.[index];
+      if (value !== st.sent && input) {
+        st.sent = value;
+        callVmix([{ Function: "SetVolume", Input: input, Value: value }], `Volumen input ${input}: ${value}%`).catch(error => flash(error.message, true));
+      }
+      st.timer = setTimeout(() => { st.timer = null; if (Math.round(st.level * 100) !== st.sent) onVolume(index, { type: "pb", value: st.level * 16383 }); }, 40);
+    };
+    send();
+  }
+
   // ---------- MIDI ----------
   function keyFor(data) {
     const status = data[0] & 0xf0;
@@ -249,7 +280,7 @@
     if (learnTarget) {
       // Ignora el "soltar" del control recien asignado (sino el siguiente paso lo tomaria).
       if (msg.key === lastAssigned.key && Date.now() - lastAssigned.time < 1500) return;
-      if (!msg.isPress && byId[learnTarget]?.kind !== "absolute") return;
+      if (!msg.isPress && !["absolute", "volume"].includes(byId[learnTarget]?.kind)) return;
       assign(learnTarget, msg.key);
       lastAssigned = { key: msg.key, time: Date.now() };
       if (wizard) {
@@ -271,6 +302,7 @@
     if (!action) return;
     if (action.kind === "relative") return onJog(msg.value);
     if (action.kind === "absolute") return onSpeed(msg);
+    if (action.kind === "volume") return onVolume(action.index, msg);
     if (!msg.isPress) return;
     Promise.resolve().then(() => action.run()).catch(error => flash(error.message, true));
   }
@@ -325,6 +357,7 @@
     }
     config.bindings ||= {};
     while (config.cameras.length < 8) config.cameras.push("");
+    if (!Array.isArray(config.volumeInputs)) config.volumeInputs = ["1", "11"];
   }
 
   function scheduleConfigSave() {
@@ -374,6 +407,7 @@
           <div class="form-grid">
             ${config.cameras.map((value, i) => `<label>Cámara ${i + 1} → input <input data-midi-camera="${i}" value="${html(value)}" placeholder="-"></label>`).join("")}
             <label>Replay → input <input id="midi-replay-input" value="${html(config.replayInput)}"></label>
+            ${[0, 1].map(i => `<label>Volumen ${i + 1} → input <input data-midi-volume="${i}" value="${html(config.volumeInputs[i])}" placeholder="-"></label>`).join("")}
             <label>Jog: cuadros por paso <input id="midi-jog-step" type="number" min="1" max="10" value="${html(config.jogStep)}"></label>
             <label>Stop replay: transición
               <select id="midi-stinger">
@@ -449,6 +483,11 @@
     root.querySelectorAll("[data-midi-camera]").forEach(input => input.addEventListener("change", () => {
       config.cameras[Number(input.dataset.midiCamera)] = input.value.trim();
       scheduleConfigSave();
+    }));
+    root.querySelectorAll("[data-midi-volume]").forEach(input => input.addEventListener("change", () => {
+      config.volumeInputs[Number(input.dataset.midiVolume)] = input.value.trim();
+      scheduleConfigSave();
+      render();
     }));
     root.querySelector("#midi-replay-input")?.addEventListener("change", event => { config.replayInput = event.target.value.trim(); scheduleConfigSave(); });
     root.querySelector("#midi-stinger")?.addEventListener("change", event => { config.stinger = event.target.value; scheduleConfigSave(); });

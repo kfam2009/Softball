@@ -69,6 +69,7 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 - **Velocidad**: asignar "Velocidad del replay" con **Aprender** moviendo el fader (aparece como "Fader N"; el nanoKONTROL en modo Mackie manda pitch bend). La velocidad cambia de forma gradual (no salta aunque se mueva el fader de golpe): arriba 100 %, abajo 5 %.
 - **Replay de los últimos 10 s / 15 s**: crea el replay y lo deja seleccionado. Mark Out también deja seleccionado el replay recién marcado.
 - **Jog**: por defecto **corre el comienzo (Punto In) del replay seleccionado**, cuadro a cuadro con aceleración. Con "Cambiar modo del jog" alterna **Punto In / Punto Out / Posición**.
+- **Audio**: **Volumen 1** y **Volumen 2** con faders (por defecto input 1 = cámara 1 e input 11 = música; se cambia en "Volumen 1/2 → input"). Asignar con **Aprender** moviendo el fader. Si vMix tiene un atajo MIDI en el mismo fader, borrarlo en Settings → Shortcuts.
 - **Juego y gráficos**: Ball, Strike, Foul, Out, Carrera, Hit, Error, Cambio de lado, bases, Conteo 0-0, Deshacer, Scorebug / Zócalo / Publicidad In-Out.
 
 ## Celular (solo scorebug)
