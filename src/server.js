@@ -215,6 +215,52 @@ function handleLogoUpload(req, res, url) {
   });
 }
 
+function archiveLogos(files) {
+  // No borra: mueve a Logos\_anteriores\<fecha> para poder recuperarlos.
+  const dir = logosDir();
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  const target = path.join(dir, "_anteriores", stamp);
+  let moved = 0;
+  for (const name of files) {
+    const source = path.resolve(dir, name);
+    if (path.dirname(source) !== path.resolve(dir) || !imageExtensions.has(path.extname(source).toLowerCase()) || !fs.existsSync(source)) continue;
+    fs.mkdirSync(target, { recursive: true });
+    fs.renameSync(source, path.join(target, path.basename(source)));
+    moved += 1;
+  }
+  return { moved, target };
+}
+
+function clearRemovedLogosFromState(removedValues) {
+  const state = readState();
+  let changed = false;
+  for (const side of ["away", "home"]) {
+    if (removedValues.has(state.match.teams[side].logo)) {
+      state.match.teams[side].logo = "";
+      changed = true;
+    }
+  }
+  if (changed) {
+    writeState(state);
+    broadcast(readState());
+  }
+}
+
+function handleLogoDelete(req, res, url) {
+  try {
+    const dir = logosDir();
+    const all = fs.readdirSync(dir).filter(file => imageExtensions.has(path.extname(file).toLowerCase()));
+    const one = url.searchParams.get("file");
+    const files = one ? all.filter(file => file === one) : all;
+    if (one && !files.length) throw new Error("Ese logo no esta en la carpeta Logos.");
+    const result = archiveLogos(files);
+    clearRemovedLogosFromState(new Set(files.map(file => `logos/${encodeURIComponent(file)}`)));
+    sendJson(res, { ok: true, ...result, logos: listLogos(), state: readState() });
+  } catch (error) {
+    sendJson(res, { ok: false, error: error.message }, 400);
+  }
+}
+
 function serveLogo(res, urlPath) {
   const name = decodeURIComponent(urlPath.slice("/logos/".length));
   const dir = logosDir();
@@ -610,6 +656,10 @@ function createServer() {
 
     if (req.method === "POST" && url.pathname === "/api/logos/upload") {
       return handleLogoUpload(req, res, url);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/logos/delete") {
+      return handleLogoDelete(req, res, url);
     }
 
     if (req.method === "GET" && url.pathname.startsWith("/logos/")) {

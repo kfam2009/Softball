@@ -142,6 +142,39 @@ async function uploadLogo(side) {
   input.click();
 }
 
+async function deleteLogos(file) {
+  const query = file ? `?file=${encodeURIComponent(file)}` : "";
+  const response = await fetch(`/api/logos/delete${query}`, { method: "POST" });
+  const payload = await response.json();
+  if (!payload.ok) throw new Error(payload.error || "No se pudo borrar.");
+  logoOptions = [{ value: "", label: "No logo" }, ...payload.logos];
+  applyRemoteState(payload.state, "");
+  setStatus(payload.moved ? `${payload.moved} logo(s) quitados. Quedan guardados en ${payload.target}` : "No habia logos en la carpeta Logos.");
+}
+
+document.querySelectorAll("[data-logo-delete]").forEach(button => button.addEventListener("click", event => {
+  event.preventDefault();
+  const side = button.dataset.logoDelete;
+  const select = document.querySelector(`select[data-path="match.teams.${side}.logo"]`);
+  const option = logoOptions.find(item => item.value === select?.value);
+  if (!option || option.source !== "Logos") {
+    setStatus("Elegí un logo de la carpeta Logos para borrarlo (los logos del panel no se borran).", true);
+    return;
+  }
+  if (!window.confirm(`Quitar el logo "${option.label}" de la carpeta Logos?`)) return;
+  deleteLogos(option.file).catch(error => setStatus(error.message, true));
+}));
+
+document.getElementById("logos-clear")?.addEventListener("click", () => {
+  const count = logoOptions.filter(item => item.source === "Logos").length;
+  if (!count) {
+    setStatus("La carpeta Logos ya esta vacia.");
+    return;
+  }
+  if (!window.confirm(`Quitar los ${count} logos de la carpeta Logos para cargar los del nuevo torneo?\n(Se guardan en Logos\\_anteriores por si los necesitas.)`)) return;
+  deleteLogos("").catch(error => setStatus(error.message, true));
+});
+
 document.querySelectorAll("[data-team-preset]").forEach(select => select.addEventListener("change", () => applyTeamPreset(select.dataset.teamPreset, select.value)));
 document.querySelectorAll("[data-logo-upload]").forEach(button => button.addEventListener("click", event => {
   event.preventDefault();
