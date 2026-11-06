@@ -114,6 +114,7 @@ function normalizeState(state) {
     ]
   };
   state.upcoming.games ||= [];
+  state.upcoming.diamond ||= "";
   while (state.upcoming.games.length < 3) state.upcoming.games.push({ away: "", home: "", time: "", court: "", round: "", status: "" });
   state.ndi ||= {};
   state.ndi.sourceName ||= "B5 Scorebug"; // mismo nombre NDI que usa el input 8 del proyecto vMix
@@ -205,6 +206,83 @@ function handleLogoUpload(req, res, url) {
       sendJson(res, { ok: false, error: error.message }, 500);
     }
   });
+}
+
+// ---------- Upcoming desde el fixture ----------
+function normName(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+}
+
+function localDate(now) {
+  const pad = n => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+function minutesOf(time) {
+  const match = /^(\d{1,2}):(\d{2})/.exec(String(time || ""));
+  return match ? Number(match[1]) * 60 + Number(match[2]) : null;
+}
+
+function teamShort(state, name) {
+  const team = (state.excel?.teams || []).find(item => normName(item.name) === normName(name));
+  return team?.short || "";
+}
+
+function upcomingFromFixture(state, options = {}) {
+  const fixture = Array.isArray(state.excel?.fixture) ? state.excel.fixture : [];
+  if (!fixture.length) throw new Error("No hay fixture. Cargá la hoja FIXTURE en el Excel y apretá Sync Excel.");
+  const diamond = String(state.upcoming?.diamond || "").trim();
+  const now = options.now || new Date();
+  const today = localDate(now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let games = fixture
+    .map((game, index) => ({ ...game, index, minutes: minutesOf(game.time) }))
+    .filter(game => !diamond || normName(game.diamond) === normName(diamond))
+    .filter(game => !game.date || game.date === today)
+    .sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.minutes ?? 9999) - (b.minutes ?? 9999) || a.index - b.index);
+
+  if (!games.length) throw new Error(diamond ? `No hay partidos de hoy en el diamante ${diamond}.` : "No hay partidos de hoy en el fixture.");
+
+  // 1) Si el partido actual (Teams & Score) esta en el fixture, se toman los que siguen.
+  const home = normName(state.match.teams.home.name);
+  const away = normName(state.match.teams.away.name);
+  const currentIndex = games.findIndex(game => {
+    const pair = [normName(game.home), normName(game.away)];
+    return pair.includes(home) && pair.includes(away);
+  });
+  let next;
+  let mode;
+  if (currentIndex >= 0) {
+    next = games.slice(currentIndex + 1);
+    mode = "partido actual";
+  } else {
+    // 2) Si no, los que todavia no empezaron segun la hora de la PC.
+    next = games.filter(game => game.minutes === null || game.minutes > nowMinutes);
+    mode = `hora de la PC (${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")})`;
+  }
+  if (!next.length) throw new Error(`No quedan partidos después (${mode}${diamond ? `, diamante ${diamond}` : ""}).`);
+
+  const count = Math.max(1, Math.min(3, Number(state.upcoming.count || 3)));
+  const labels = ["Próximo", "Luego", "Después"];
+  const chosen = next.slice(0, count);
+  state.upcoming.games = [0, 1, 2].map(i => {
+    const game = chosen[i];
+    const previous = state.upcoming.games?.[i] || {};
+    if (!game) return { away: "", home: "", time: "", court: "", round: previous.round || "", status: "" };
+    return {
+      away: game.away,
+      home: game.home,
+      awayShort: teamShort(state, game.away),
+      homeShort: teamShort(state, game.home),
+      time: game.time,
+      court: game.diamond || diamond,
+      round: previous.round || "",
+      status: labels[i]
+    };
+  });
+  state.upcoming.count = String(Math.max(1, chosen.length));
+  return { state, mode, loaded: chosen.length };
 }
 
 function handleLogoDelete(req, res) {
@@ -382,6 +460,8 @@ function applyExcelToState(state, excel) {
     away: excel.away,
     umpires: excel.umpires,
     teams: excel.teams || [],
+    fixture: excel.fixture || [],
+    diamonds: excel.diamonds || [],
     lineupHome: excel.lineupHome || [],
     lineupAway: excel.lineupAway || []
   };
@@ -625,6 +705,18 @@ function createServer() {
 
     if (req.method === "POST" && url.pathname === "/api/logos/upload") {
       return handleLogoUpload(req, res, url);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/upcoming/from-fixture") {
+      try {
+        const result = upcomingFromFixture(readState());
+        writeState(result.state);
+        const next = readState();
+        broadcast(next);
+        return sendJson(res, { ok: true, mode: result.mode, loaded: result.loaded, state: next });
+      } catch (error) {
+        return sendJson(res, { ok: false, error: error.message }, 400);
+      }
     }
 
     if (req.method === "POST" && url.pathname === "/api/logos/delete") {

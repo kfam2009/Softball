@@ -310,7 +310,7 @@ function renderCommentators(state) {
 
 function renderGame(game, index) {
   return `
-    <article class="upcoming-game"><div class="upcoming-index">${index + 1}</div><div class="upcoming-teams"><strong>${esc(game.away || "Away")}</strong><span>vs</span><strong>${esc(game.home || "Home")}</strong></div><div class="upcoming-info"><span>${esc(game.time || "TBD")}</span><span>${esc(game.court || "Court")}</span></div><div class="upcoming-note"><span>${esc(game.round || "")}</span><b>${esc(game.status || "")}</b></div></article>
+    <article class="upcoming-game"><div class="upcoming-index">${index + 1}</div><div class="upcoming-teams"><strong>${esc(game.away || "Away")}</strong><span>vs</span><strong>${esc(game.home || "Home")}</strong></div><div class="upcoming-info"><span>${esc(game.time || "TBD")}</span><span>${esc(game.court || "")}</span></div><div class="upcoming-note"><span>${esc(game.round || "")}</span><b>${esc(game.status || "")}</b></div></article>
   `;
 }
 

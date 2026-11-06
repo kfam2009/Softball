@@ -329,6 +329,9 @@
           <label>Upcoming input # <input data-path="vmix.upcomingInput" placeholder="Example: 16"></label>
           <label>Title <input data-path="upcoming.title"></label>
           <label>Subtitle <input data-path="upcoming.subtitle"></label>
+          <label>Diamante en el que estamos
+            <select data-path="upcoming.diamond" id="diamond-select"></select>
+          </label>
           <label>Show games
             <select data-path="upcoming.count">
               <option value="1">1 game</option>
@@ -336,6 +339,10 @@
               <option value="3">3 games</option>
             </select>
           </label>
+        </div>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn secondary" type="button" id="upcoming-from-fixture" title="Toma los partidos que siguen en el diamante elegido">Cargar del fixture</button>
+          <span class="hint" id="fixture-hint"></span>
         </div>
         <div class="vmix-actions" style="margin-top:12px">
           <button class="btn" data-overlay-in="upcoming">In</button>
@@ -350,7 +357,7 @@
             <label>Away <input data-path="upcoming.games.0.away"></label>
             <label>Home <input data-path="upcoming.games.0.home"></label>
             <label>Time <input data-path="upcoming.games.0.time"></label>
-            <label>Court <input data-path="upcoming.games.0.court"></label>
+            <label>Diamante <input data-path="upcoming.games.0.court"></label>
             <label>Round <input data-path="upcoming.games.0.round"></label>
             <label>Status <input data-path="upcoming.games.0.status"></label>
           </div>
@@ -361,7 +368,7 @@
             <label>Away <input data-path="upcoming.games.1.away"></label>
             <label>Home <input data-path="upcoming.games.1.home"></label>
             <label>Time <input data-path="upcoming.games.1.time"></label>
-            <label>Court <input data-path="upcoming.games.1.court"></label>
+            <label>Diamante <input data-path="upcoming.games.1.court"></label>
             <label>Round <input data-path="upcoming.games.1.round"></label>
             <label>Status <input data-path="upcoming.games.1.status"></label>
           </div>
@@ -372,7 +379,7 @@
             <label>Away <input data-path="upcoming.games.2.away"></label>
             <label>Home <input data-path="upcoming.games.2.home"></label>
             <label>Time <input data-path="upcoming.games.2.time"></label>
-            <label>Court <input data-path="upcoming.games.2.court"></label>
+            <label>Diamante <input data-path="upcoming.games.2.court"></label>
             <label>Round <input data-path="upcoming.games.2.round"></label>
             <label>Status <input data-path="upcoming.games.2.status"></label>
           </div>

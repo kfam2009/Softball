@@ -51,6 +51,10 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 - **Borrar logos** elimina todos los logos de la carpeta `Logos` (salen de la lista y los equipos quedan sin logo), para cargar los del torneo siguiente.
 - **Hoja `EQUIPOS`** (opcional) en el Excel: A Nombre, B Sigla, C Color (#hex), D Logo (nombre del archivo en `Logos`, con o sin extensión). En el panel, "equipo (Excel)" completa nombre, sigla, color y logo de una. Después de editar el Excel, **Sync Excel**.
 
+## Fixture y Upcoming
+- Hoja **FIXTURE** con encabezados **FECHA** (opcional), **HORA**, **LOCAL**, **VISITANTE**, **DIAMANTE** (en cualquier orden). Hoja **DIAMANTES** con la lista de diamantes (columna A).
+- En la pestaña **Upcoming**: elegir **Diamante en el que estamos** y apretar **Cargar del fixture**. Toma los partidos de hoy de ese diamante que siguen al partido actual (el de Teams & Score); si el partido actual no está en el fixture, usa la hora de la PC. Carga hasta 3 (según "Show games"); el resto se edita a mano.
+
 ## Celular (solo scorebug)
 Desde un celular en la misma red (WiFi o **ZeroTier**) abrir `http://IP-DE-LA-PC:8136/m`. En el panel de la PC, arriba a la derecha, aparece la dirección (la de ZeroTier primero); tocándola muestra un **QR** para escanear. La página del celular muestra el nombre de la PC a la que está conectada, así no se confunde si hay dos PCs con el panel en la misma red.
 Botones: Ball, Strike, Foul, Out, Carrera, Hit, Base por bolas, Conteo 0-0, Error, Cambio de lado, Limpiar bases, **Deshacer**, Scorebug In/Out, bases tocando el diamante y correcciones.

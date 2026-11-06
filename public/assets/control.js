@@ -312,6 +312,7 @@ function fillForm() {
   }
   fillLogoSelects();
   fillTeamPresetSelects();
+  fillDiamondSelect();
   fillPlayerPicker();
   renderLineupBuilders();
   renderBaseControl();
@@ -412,6 +413,36 @@ function renderLineupBuilders() {
 function escAttr(value) {
   return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[char]));
 }
+
+function fillDiamondSelect() {
+  const select = document.getElementById("diamond-select");
+  if (!select) return;
+  const diamonds = Array.isArray(state.excel?.diamonds) ? state.excel.diamonds : [];
+  const current = state.upcoming?.diamond || "";
+  const list = current && !diamonds.includes(current) ? [...diamonds, current] : diamonds;
+  select.innerHTML = `<option value="">${diamonds.length ? "Todos" : "Sin hoja DIAMANTES"}</option>` +
+    list.map(name => `<option value="${escAttr(name)}">${escAttr(name)}</option>`).join("");
+  select.value = current;
+  const hint = document.getElementById("fixture-hint");
+  if (hint) {
+    const total = Array.isArray(state.excel?.fixture) ? state.excel.fixture.length : 0;
+    hint.textContent = total
+      ? `${total} partidos en el fixture. Toma los que siguen al partido actual (Teams & Score) o, si no está, según la hora de la PC.`
+      : "Cargá la hoja FIXTURE en el Excel y apretá Sync Excel.";
+  }
+}
+
+async function loadUpcomingFromFixture() {
+  clearTimeout(saveTimer);
+  await save();
+  const response = await fetch("/api/upcoming/from-fixture", { method: "POST" });
+  const payload = await response.json();
+  if (!payload.ok) throw new Error(payload.error || "No se pudo cargar el fixture.");
+  applyRemoteState(payload.state, "");
+  setStatus(`Upcoming: ${payload.loaded} partido(s) cargados del fixture (según ${payload.mode}).`);
+}
+
+document.getElementById("upcoming-from-fixture")?.addEventListener("click", () => loadUpcomingFromFixture().catch(error => setStatus(error.message, true)));
 
 function renderCount() {
   if (countPill) countPill.textContent = `${Number(state.match.balls || 0)}-${Number(state.match.strikes || 0)}`;
