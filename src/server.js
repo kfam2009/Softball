@@ -136,6 +136,7 @@ function normalizeState(state) {
       { away: "", home: "", time: "", court: "Diamante 1", round: "", status: "Game 3" }
     ]
   };
+  adsDefaults(state);
   state.upcoming.games ||= [];
   state.upcoming.diamond ||= "";
   while (state.upcoming.games.length < 3) state.upcoming.games.push({ away: "", home: "", time: "", court: "", round: "", status: "" });
@@ -230,6 +231,160 @@ function handleLogoUpload(req, res, url) {
     }
   });
 }
+
+// ---------- Publicidades y zocalos ----------
+// Carpeta "Publicidades" (al lado del Excel o en una subcarpeta) con imagenes 1920x1080 a pantalla completa,
+// y adentro "Zocalos" con PNG transparentes 1920x1080. Se puede fijar otra carpeta desde el panel.
+function findAdsFolder() {
+  const configured = readConfig().adsFolder;
+  if (configured) return { path: configured, source: "elegida en el panel" };
+  const base = path.dirname(getExcelPath().path);
+  const isAds = name => /^publicidad(es)?$/i.test(name);
+  try {
+    for (const entry of fs.readdirSync(base, { withFileTypes: true })) {
+      if (entry.isDirectory() && isAds(entry.name)) return { path: path.join(base, entry.name), source: "automática" };
+    }
+    for (const entry of fs.readdirSync(base, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.name.startsWith(".") || entry.name === "node_modules") continue;
+      const inner = path.join(base, entry.name);
+      for (const sub of fs.readdirSync(inner, { withFileTypes: true })) {
+        if (sub.isDirectory() && isAds(sub.name)) return { path: path.join(inner, sub.name), source: "automática" };
+      }
+    }
+  } catch {}
+  return { path: path.join(base, "Publicidades"), source: "automática (no encontrada)" };
+}
+
+function listImages(dir) {
+  try {
+    return fs.readdirSync(dir).filter(file => imageExtensions.has(path.extname(file).toLowerCase()))
+      .sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
+  } catch {
+    return [];
+  }
+}
+
+function adsCatalog() {
+  const folder = findAdsFolder();
+  let zocalosDir = "";
+  try {
+    const entry = fs.readdirSync(folder.path, { withFileTypes: true }).find(item => item.isDirectory() && /^z[oó]calos?$/i.test(item.name.normalize("NFC")));
+    if (entry) zocalosDir = entry.name;
+  } catch {}
+  const enc = file => file.split("/").map(encodeURIComponent).join("/");
+  return {
+    folder: folder.path,
+    source: folder.source,
+    exists: fs.existsSync(folder.path),
+    full: listImages(folder.path).map(file => ({ file, label: prettyName(file).replace(/^publicidad\s*/i, "").replace(/\s*1920x1080$/i, ""), src: `ads/${enc(file)}` })),
+    zocalos: zocalosDir ? listImages(path.join(folder.path, zocalosDir)).map(file => ({ file, label: prettyName(file).replace(/^z[oó]calo\s*/i, "").replace(/\s*1920x1080$/i, ""), src: `ads/${enc(`${zocalosDir}/${file}`)}` })) : []
+  };
+}
+
+function serveAd(res, urlPath) {
+  const folder = path.resolve(findAdsFolder().path);
+  const rel = decodeURIComponent(urlPath.slice("/ads/".length));
+  const file = path.resolve(folder, rel);
+  if (!file.startsWith(folder + path.sep) || !imageExtensions.has(path.extname(file).toLowerCase())) {
+    res.writeHead(403);
+    res.end("Forbidden");
+    return;
+  }
+  fs.readFile(file, (error, data) => {
+    if (error) {
+      res.writeHead(404);
+      res.end("Not found");
+      return;
+    }
+    res.writeHead(200, { "Content-Type": mime[path.extname(file).toLowerCase()] || "application/octet-stream", "Cache-Control": "no-store" });
+    res.end(data);
+  });
+}
+
+function adsDefaults(state) {
+  state.ads ||= {};
+  for (const [kind, seconds] of [["full", 8], ["zocalo", 10]]) {
+    const item = state.ads[kind] ||= {};
+    item.visible = Boolean(item.visible);
+    item.index = Number(item.index || 0);
+    item.startedAt = Number(item.startedAt || 0);
+    item.seconds = Math.max(2, Math.min(120, Number(item.seconds || seconds)));
+    item.mode = item.mode === "once" ? "once" : item.mode === "fixed" ? "fixed" : "loop";
+  }
+  if (state.ads.zocalo.hideScorebug === undefined) state.ads.zocalo.hideScorebug = true;
+  state.ads.zocalo.hideScorebug = state.ads.zocalo.hideScorebug !== false && state.ads.zocalo.hideScorebug !== "false";
+  return state.ads;
+}
+
+function adCount(state, kind) {
+  const list = state.ads?.files?.[kind === "full" ? "full" : "zocalos"] || [];
+  return list.length;
+}
+
+function currentAdIndex(state, kind, now = Date.now()) {
+  const item = state.ads[kind];
+  const total = adCount(state, kind);
+  if (!total) return 0;
+  if (!item.visible || item.mode === "fixed") return ((item.index % total) + total) % total;
+  const steps = Math.floor((now - item.startedAt) / (item.seconds * 1000));
+  return (((item.index + steps) % total) + total) % total;
+}
+
+function refreshAdFiles(state) {
+  const catalog = adsCatalog();
+  state.ads.files = { full: catalog.full, zocalos: catalog.zocalos };
+  return catalog;
+}
+
+function applyAdAction(state, action) {
+  const match = /^(ad|zocalo)-(in|out|next|prev|select-(\d+))$/.exec(action);
+  if (!match) return false;
+  adsDefaults(state);
+  refreshAdFiles(state);
+  const kind = match[1] === "ad" ? "full" : "zocalo";
+  const item = state.ads[kind];
+  const total = adCount(state, kind);
+  const op = match[2];
+  if (op === "in") {
+    if (!total) throw new Error(kind === "full" ? "No hay publicidades en la carpeta." : "No hay zócalos en la carpeta.");
+    item.visible = true;
+    item.startedAt = Date.now();
+  } else if (op === "out") {
+    item.index = currentAdIndex(state, kind);
+    item.visible = false;
+  } else if (op === "next" || op === "prev") {
+    if (!total) return true;
+    item.index = (currentAdIndex(state, kind) + (op === "next" ? 1 : -1) + total) % total;
+    item.startedAt = Date.now();
+  } else if (match[3] !== undefined) {
+    item.index = Math.min(Number(match[3]), Math.max(0, total - 1));
+    item.startedAt = Date.now();
+  }
+  return true;
+}
+
+// Modo "una vuelta": cuando pasaron todas, sale sola.
+setInterval(() => {
+  try {
+    if (!fs.existsSync(statePath)) return;
+    const state = readState();
+    if (!state.ads) return;
+    let changed = false;
+    for (const kind of ["full", "zocalo"]) {
+      const item = state.ads[kind];
+      const total = adCount(state, kind);
+      if (item?.visible && item.mode === "once" && total && Date.now() - item.startedAt >= total * item.seconds * 1000) {
+        item.visible = false;
+        item.index = 0;
+        changed = true;
+      }
+    }
+    if (changed) {
+      writeState(state);
+      broadcast(readState());
+    }
+  } catch {}
+}, 500).unref();
 
 // ---------- Upcoming desde el fixture ----------
 function normName(value) {
@@ -672,6 +827,7 @@ function applyGameAction(state, action) {
 function applyScorebugAction(state, action) {
   state = normalizeState(state);
   if (applyGameAction(state, action)) return state;
+  if (applyAdAction(state, action)) return state;
 
   if (action === "scorebug-in") {
     state.ndi.activeGraphic = "scorebug";
@@ -730,6 +886,43 @@ function createServer() {
 
     if (req.method === "POST" && url.pathname === "/api/replay/open") {
       return openReplayPanel(res);
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/ads") {
+      const state = readState();
+      const catalog = refreshAdFiles(state);
+      writeState(state);
+      broadcast(readState());
+      return sendJson(res, { ok: true, ...catalog });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/ads-folder") {
+      let raw = "";
+      req.on("data", chunk => raw += chunk);
+      req.on("end", () => {
+        try {
+          const target = String(JSON.parse(raw || "{}").path || "").trim().replace(/^"+|"+$/g, "");
+          const config = readConfig();
+          if (!target) delete config.adsFolder;
+          else {
+            if (!fs.existsSync(target) || !fs.statSync(target).isDirectory()) throw new Error(`No existe la carpeta: ${target}`);
+            config.adsFolder = path.resolve(target);
+          }
+          writeConfig(config);
+          const state = readState();
+          const catalog = refreshAdFiles(state);
+          writeState(state);
+          broadcast(readState());
+          sendJson(res, { ok: true, ...catalog });
+        } catch (error) {
+          sendJson(res, { ok: false, error: error.message }, 400);
+        }
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname.startsWith("/ads/")) {
+      return serveAd(res, url.pathname);
     }
 
     if (req.method === "GET" && url.pathname === "/api/excel-info") {

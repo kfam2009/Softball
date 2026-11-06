@@ -27,7 +27,9 @@ const graphics = {
   upcoming: { label: "Upcoming" },
   lineupAway: { label: "Away Line up" },
   lineupHome: { label: "Home Line up" },
-  defense: { label: "Defensa" }
+  defense: { label: "Defensa" },
+  adFull: { label: "Publicidad" },
+  zocalo: { label: "Zócalo" }
 };
 const tabPreviewGraphic = {
   scorebug: "scorebug",
@@ -39,6 +41,7 @@ const tabPreviewGraphic = {
   commentators: "commentators",
   upcoming: "upcoming",
   lineup: "lineupHome",
+  ads: "adFull",
   defense: "defense"
 };
 const openReplayPanelButton = document.getElementById("open-replay-panel");
@@ -313,6 +316,7 @@ function fillForm() {
   fillLogoSelects();
   fillTeamPresetSelects();
   fillDiamondSelect();
+  renderAds(true);
   fillPlayerPicker();
   renderLineupBuilders();
   renderBaseControl();
@@ -484,6 +488,86 @@ document.getElementById("excel-upload")?.addEventListener("click", () => {
   });
   input.click();
 });
+
+// ---------- Publicidades ----------
+function adCurrentIndex(kind) {
+  const item = state?.ads?.[kind];
+  const list = state?.ads?.files?.[kind === "full" ? "full" : "zocalos"] || [];
+  if (!item || !list.length) return -1;
+  const total = list.length;
+  if (!item.visible || item.mode === "fixed") return ((Number(item.index || 0) % total) + total) % total;
+  const steps = Math.floor((Date.now() - Number(item.startedAt || 0)) / (Number(item.seconds || 8) * 1000));
+  return (((Number(item.index || 0) + steps) % total) + total) % total;
+}
+
+let adsGridSignature = "";
+function renderAds(force = false) {
+  if (!state?.ads) return;
+  const parts = [];
+  for (const kind of ["full", "zocalo"]) {
+    const list = state.ads.files?.[kind === "full" ? "full" : "zocalos"] || [];
+    const item = state.ads[kind] || {};
+    const current = adCurrentIndex(kind);
+    parts.push(`${kind}:${list.map(a => a.src).join(",")}:${current}:${item.visible}`);
+  }
+  const signature = parts.join("|");
+  if (!force && signature === adsGridSignature) return;
+  adsGridSignature = signature;
+  for (const kind of ["full", "zocalo"]) {
+    const grid = document.getElementById(kind === "full" ? "ads-full-grid" : "ads-zocalo-grid");
+    const status = document.getElementById(kind === "full" ? "ad-full-status" : "ad-zocalo-status");
+    if (!grid) continue;
+    const list = state.ads.files?.[kind === "full" ? "full" : "zocalos"] || [];
+    const item = state.ads[kind] || {};
+    const current = adCurrentIndex(kind);
+    const prefix = kind === "full" ? "ad" : "zocalo";
+    grid.innerHTML = list.length ? list.map((ad, index) => `
+      <button type="button" class="ad-thumb ${index === current ? (item.visible ? "on-air" : "current") : ""}" data-ad-select="${prefix}-select-${index}" title="${escAttr(ad.file)}">
+        <img src="${escAttr(ad.src)}" alt="" loading="lazy"><span>${escAttr(ad.label)}</span>
+      </button>`).join("") : `<p class="hint">No hay imágenes${kind === "zocalo" ? " en la subcarpeta Zocalos" : " en la carpeta"}.</p>`;
+    grid.querySelectorAll("[data-ad-select]").forEach(button => button.addEventListener("click", () => adAction(button.dataset.adSelect)));
+    if (status) {
+      status.textContent = item.visible ? `● AL AIRE: ${list[current]?.label || ""}` : `(${list.length})`;
+      status.classList.toggle("ad-on-air", Boolean(item.visible));
+    }
+  }
+}
+
+async function adAction(action) {
+  try {
+    clearTimeout(saveTimer);
+    await save();
+    const response = await fetch(`/api/scorebug/${encodeURIComponent(action)}`, { method: "POST" });
+    const payload = await response.json();
+    if (!payload.ok) throw new Error(payload.error || action);
+    applyRemoteState(payload.state, "");
+    renderAds(true);
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+}
+
+async function loadAds() {
+  const data = await fetch("/api/ads", { cache: "no-store" }).then(r => r.json());
+  const el = document.getElementById("ads-folder");
+  if (el) el.innerHTML = `Carpeta <b class="${data.exists ? "ok" : "bad"}">${data.exists ? "✓" : "✗ no encontrada"}</b> <code>${escAttr(data.folder)}</code> <small>(${escAttr(data.source)}) · ${data.full.length} publicidades · ${data.zocalos.length} zócalos</small>`;
+}
+
+document.querySelectorAll("[data-ad-action]").forEach(button => button.addEventListener("click", () => adAction(button.dataset.adAction)));
+document.getElementById("ads-reload")?.addEventListener("click", () => loadAds().then(() => setStatus("Carpeta de publicidades recargada.")).catch(error => setStatus(error.message, true)));
+document.getElementById("ads-folder-change")?.addEventListener("click", async () => {
+  const value = window.prompt("Ruta de la carpeta de publicidades (en el Explorador: clic derecho sobre la carpeta > Copiar como ruta). Dentro, la subcarpeta Zocalos.\nDejá vacío para la búsqueda automática.", "");
+  if (value === null) return;
+  try {
+    const response = await fetch("/api/ads-folder", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: value }) });
+    const payload = await response.json();
+    if (!payload.ok) throw new Error(payload.error);
+    await loadAds();
+  } catch (error) {
+    setStatus(error.message, true);
+  }
+});
+setInterval(() => renderAds(), 500);
 
 document.getElementById("diamond-select")?.addEventListener("change", () => {
   // Al cambiar de diamante, el Upcoming se recarga solo con los partidos de ese diamante.
@@ -809,6 +893,7 @@ fetch("/api/network").then(r => r.json()).then(data => {
 
 load()
   .then(() => refreshExcelInfo().catch(() => {}))
+  .then(() => loadAds().catch(() => {}))
   .then(() => loadLogos().catch(error => setStatus(error.message, true)))
   .then(connectStateEvents)
   .catch(error => setStatus(error.message, true));

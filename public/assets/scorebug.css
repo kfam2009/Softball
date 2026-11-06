@@ -2262,3 +2262,83 @@ textarea {
 .excel-info .ok { color: #1b8a3d; }
 .excel-info .bad { color: #c62828; }
 .excel-info .logo-upload-btn { margin-top: 0; }
+
+/* ---------- Publicidades y zocalos (NDI) ---------- */
+.graphic-layer[data-graphic-layer^="zocalo:"] { z-index: 10; }
+.graphic-layer[data-graphic-layer^="full:"] { z-index: 20; }
+
+.ad-full,
+.ad-zocalo {
+  position: absolute;
+  inset: 0;
+}
+
+.ad-full img,
+.ad-zocalo img {
+  display: block;
+  width: 1920px;
+  height: 1080px;
+}
+
+.ad-full img { object-fit: cover; }
+.ad-zocalo img { object-fit: contain; }
+
+/* ---------- Panel: publicidades ---------- */
+.ads-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ad-thumb {
+  position: relative;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  background: repeating-conic-gradient(#d9d4ca 0 25%, #efebe3 0 50%) 0 0 / 16px 16px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ad-thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+}
+
+.ad-thumb span {
+  display: block;
+  padding: 4px 6px;
+  background: #10151b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ad-thumb.current { border-color: #ffc83d; }
+.ad-thumb.on-air { border-color: #ff4f5e; box-shadow: 0 0 0 2px #ff4f5e; }
+.ad-thumb.on-air::after {
+  content: "AL AIRE";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #ff4f5e;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.ad-status {
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.ad-status.ad-on-air { color: #c62828; }

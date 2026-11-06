@@ -549,11 +549,56 @@ function clearAllLayers(animated = true) {
   }, animated ? 480 : 0);
 }
 
-function render(state) {
+// ---------- Publicidades y zocalos ----------
+let lastState = null;
+
+function adIndex(state, kind) {
+  const item = state.ads?.[kind];
+  const list = state.ads?.files?.[kind === "full" ? "full" : "zocalos"] || [];
+  if (!item || !list.length) return -1;
+  const total = list.length;
+  if (!item.visible || item.mode === "fixed") return ((Number(item.index || 0) % total) + total) % total;
+  const steps = Math.floor((Date.now() - Number(item.startedAt || 0)) / (Number(item.seconds || 8) * 1000));
+  return (((Number(item.index || 0) + steps) % total) + total) % total;
+}
+
+function adLayer(state, kind, force = false) {
+  const item = state.ads?.[kind];
+  if (!item || (!item.visible && !force)) return null;
+  const list = state.ads?.files?.[kind === "full" ? "full" : "zocalos"] || [];
+  const index = adIndex(state, kind);
+  const ad = list[index];
+  if (!ad) return null;
+  const className = kind === "full" ? "ad-full" : "ad-zocalo";
+  // La clave incluye la imagen: al rotar, la anterior sale con fundido y entra la nueva.
+  return { key: `${kind}:${ad.src}`, html: `<div class="${className}"><img src="${esc(ad.src)}" alt=""></div>` };
+}
+
+function adsSignature(state) {
+  return ["full", "zocalo"].map(kind => `${kind}:${state?.ads?.[kind]?.visible ? adIndex(state, kind) : "-"}`).join("|");
+}
+
+let lastAdsSignature = "";
+setInterval(() => {
+  if (!lastState) return;
+  const signature = adsSignature(lastState);
+  if (signature !== lastAdsSignature) render(lastState, true);
+}, 250);
+
+function render(state, force = false) {
   const next = JSON.stringify(state);
-  if (next === fingerprint) return;
+  if (next === fingerprint && !force) return;
   fingerprint = next;
+  lastState = state;
+  lastAdsSignature = adsSignature(state);
   setTheme(state.theme);
+
+  if (previewGraphic === "adFull" || previewGraphic === "zocalo") {
+    const layer = adLayer(state, previewGraphic === "adFull" ? "full" : "zocalo", true);
+    if (layer) renderLayerSet([layer]);
+    else clearAllLayers(false);
+    return;
+  }
 
   const isPreview = Boolean(previewGraphic);
   const activeGraphic = previewGraphic || state.ndi?.activeGraphic || "scorebug";
@@ -567,14 +612,20 @@ function render(state) {
   );
   const hasVisibleLayer = layeredMode ? (scorebugVisible || playerVisible) : Boolean(state.ndi?.visible);
 
-  if (!isPreview && !hasVisibleLayer) {
+  const zocalo = isPreview ? null : adLayer(state, "zocalo");
+  const fullAd = isPreview ? null : adLayer(state, "full");
+  const hideScorebug = Boolean(zocalo) && state.ads?.zocalo?.hideScorebug !== false;
+
+  if (!isPreview && !hasVisibleLayer && !zocalo && !fullAd) {
     clearAllLayers(true);
     return;
   }
 
   const layers = [];
-  if (layeredMode) {
-    if (scorebugVisible) {
+  if (!hasVisibleLayer && !isPreview) {
+    // solo publicidades
+  } else if (layeredMode) {
+    if (scorebugVisible && !hideScorebug) {
       layers.push({ key: "scorebug", html: renderScorebug(state) });
     }
     if (playerVisible) {
@@ -583,6 +634,8 @@ function render(state) {
   } else {
     layers.push({ key: activeGraphic, html: (renderers[activeGraphic] || renderScorebug)(state) });
   }
+  if (zocalo) layers.push(zocalo);
+  if (fullAd) layers.push(fullAd);
 
   renderLayerSet(layers);
 }

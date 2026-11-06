@@ -12,6 +12,7 @@ Outs:      OUT_PLUS.vbs (3er out = cambio de lado)  OUT_MINUS.vbs  OUTS_CLEAR.vb
 Carreras:  RUN_PLUS.vbs (equipo que batea)  AWAY_PLUS.vbs  AWAY_MINUS.vbs  HOME_PLUS.vbs  HOME_MINUS.vbs
 Hits/Err:  HIT_PLUS.vbs (equipo que batea)  ERROR_PLUS.vbs (equipo que defiende)
 Bases:     BASE_1.vbs  BASE_2.vbs  BASE_3.vbs  BASES_CLEAR.vbs
+Publicid.: AD_IN.vbs  AD_NEXT.vbs  AD_OUT.vbs  ZOCALO_IN.vbs  ZOCALO_NEXT.vbs  ZOCALO_OUT.vbs
 Entrada:   INNING_PLUS.vbs  INNING_MINUS.vbs  HALF_TOGGLE.vbs
 
 Iconos en icons\ (los nuevos de conteo se pueden crear con create-icons.ps1 o usar texto en Stream Deck).

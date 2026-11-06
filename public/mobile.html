@@ -70,6 +70,11 @@
     .in.live { box-shadow: 0 0 0 3px #fff inset, 0 0 18px rgba(0, 167, 142, .8); }
     .off { background: var(--coral); }
 
+    .ads { background: var(--panel); border-radius: 12px; border: 1px solid var(--line); padding: 10px; display: grid; gap: 8px; }
+    .ads-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+    .ads-row span { color: var(--coral); font-weight: 800; font-size: 12px; }
+    .ads-buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .ads-buttons .btn { min-height: 52px; font-size: 15px; }
     details { background: var(--panel); border-radius: 12px; border: 1px solid var(--line); }
     summary { padding: 14px; font-weight: 800; color: var(--muted); list-style: none; }
     summary::-webkit-details-marker { display: none; }
@@ -122,6 +127,21 @@
       <button class="btn off" data-action="scorebug-out">Scorebug Out</button>
     </section>
 
+    <section class="ads">
+      <div class="ads-row"><b>Publicidad</b><span id="ad-full-live"></span></div>
+      <div class="ads-buttons">
+        <button class="btn in" data-action="ad-in">In</button>
+        <button class="btn" data-action="ad-next">Sig.</button>
+        <button class="btn off" data-action="ad-out">Out</button>
+      </div>
+      <div class="ads-row"><b>Zócalo</b><span id="ad-zocalo-live"></span></div>
+      <div class="ads-buttons">
+        <button class="btn in" data-action="zocalo-in">In</button>
+        <button class="btn" data-action="zocalo-next">Sig.</button>
+        <button class="btn off" data-action="zocalo-out">Out</button>
+      </div>
+    </section>
+
     <details>
       <summary>Correcciones ▾</summary>
       <div class="grid">
@@ -168,6 +188,8 @@
       document.querySelector(".b2").classList.toggle("on", !!m.bases?.second);
       document.querySelector(".b3").classList.toggle("on", !!m.bases?.third);
       $("sb-in").classList.toggle("live", !!state.ndi?.scorebugVisible);
+      $("ad-full-live").textContent = state.ads?.full?.visible ? "● AL AIRE" : "";
+      $("ad-zocalo-live").textContent = state.ads?.zocalo?.visible ? "● AL AIRE" : "";
     }
 
     function setMsg(text, error = false, connected = true) {
