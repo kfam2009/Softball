@@ -69,6 +69,25 @@ def read_lineup(workbook, names):
     return rows
 
 
+def read_teams(workbook):
+    # Hoja opcional EQUIPOS: A Nombre, B Sigla, C Color (#hex), D Logo (nombre de archivo en la carpeta Logos)
+    sheet = next((workbook[n] for n in ["EQUIPOS", "Equipos", "TEAMS"] if n in workbook.sheetnames), None)
+    if sheet is None:
+        return []
+    teams = []
+    for values in sheet.iter_rows(values_only=True):
+        values = list(values[:4]) + [None] * (4 - len(values[:4]))
+        name, short, color, logo = (clean(v) for v in values)
+        if not name:
+            continue
+        if not teams and name.lower() in {"nombre", "equipo", "name", "team"}:
+            continue
+        if color and not color.startswith("#") and len(color) in (3, 6):
+            color = "#" + color
+        teams.append({"name": name, "short": short, "color": color, "logo": logo})
+    return teams
+
+
 def lineup_text(rows):
     return "\n".join(f"{r['order']} | {r['number']} | {r['name']} | {r['pos']}" for r in rows)
 
@@ -83,6 +102,7 @@ def main():
     home = read_sheet(workbook, "HOME")
     away = read_sheet(workbook, "AWAY")
     umpires = read_sheet(workbook, "UMPIRES")
+    teams = read_teams(workbook)
     lineup_home = read_lineup(workbook, ["LINEUP_HOME", "LINEUP HOME", "LINEUP-HOME"])
     lineup_away = read_lineup(workbook, ["LINEUP_AWAY", "LINEUP AWAY", "LINEUP-AWAY"])
     data = {
@@ -93,6 +113,7 @@ def main():
         "homeText": roster_text(home),
         "awayText": roster_text(away),
         "umpiresText": roster_text(umpires),
+        "teams": teams,
         "lineupHome": lineup_home,
         "lineupAway": lineup_away,
         "lineupHomeText": lineup_text(lineup_home),

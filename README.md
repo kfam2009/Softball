@@ -29,7 +29,7 @@ La **Defensa** dibuja la cancha con cada jugador en su posición (el DP no apare
 El scoreboard muestra las **entradas reglamentarias** (7 por defecto; 5 para infantiles, se cambia en el panel) y agrega columnas si hay extra innings, con totales **R H E**.
 
 ## Excel
-`Datos.xlsx` en la carpeta que contiene `softball-ndi` (o la ruta de la variable `SB_EXCEL`). Hojas **HOME**, **AWAY** y **UMPIRES**, columnas A/B/C: número, nombre, posición (o rol). Ver `Datos-ejemplo.xlsx`. Después de guardar, **Sync Excel** en el panel.
+`Datos.xlsx` en la carpeta que contiene `softball-ndi` (o la ruta de la variable `SB_EXCEL`). Hojas **HOME**, **AWAY**, **UMPIRES** y opcional **EQUIPOS**, columnas A/B/C: número, nombre, posición (o rol). Ver `Datos-ejemplo.xlsx`. Después de guardar, **Sync Excel** en el panel.
 
 ## Instalar en otra PC
 1. Instalar **Node.js** (nodejs.org) y **Python** (python.org, tildar "Add to PATH").
@@ -44,6 +44,11 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 ## Arranque
 - `ARRANCAR SOFTBALL.cmd` (o `scripts\START_NDI_SCOREBUG.cmd`). Panel en `http://localhost:8136/control.html`.
 - Para cerrar: `PARAR SOFTBALL.cmd` o `scripts\STOP_NDI_SCOREBUG.cmd`.
+
+## Logos y equipos
+- **Carpeta `Logos`** al lado del `Datos.xlsx` (se crea sola). Cualquier imagen PNG/JPG/WEBP/SVG/GIF que se copie ahí aparece en los selectores de logo del panel (también quedan los logos que trae el panel).
+- **Subir logo**: botón debajo de cada selector de logo; guarda la imagen en la carpeta `Logos` y la asigna al equipo.
+- **Hoja `EQUIPOS`** (opcional) en el Excel: A Nombre, B Sigla, C Color (#hex), D Logo (nombre del archivo en `Logos`, con o sin extensión). En el panel, "equipo (Excel)" completa nombre, sigla, color y logo de una. Después de editar el Excel, **Sync Excel**.
 
 ## Celular (solo scorebug)
 Desde un celular en la misma red (WiFi o **ZeroTier**) abrir `http://IP-DE-LA-PC:8136/m`. En el panel de la PC, arriba a la derecha, aparece la dirección (la de ZeroTier primero); tocándola muestra un **QR** para escanear. La página del celular muestra el nombre de la PC a la que está conectada, así no se confunde si hay dos PCs con el panel en la misma red.

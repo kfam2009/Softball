@@ -9,37 +9,8 @@ const playerPicker = document.getElementById("player-picker");
 const baseToggles = [...document.querySelectorAll("[data-base-toggle]")];
 const countPill = document.getElementById("count-pill");
 const staffRole = /coach|manager|dt|delegad|asistente|entrenador/i;
-const teamLogoOptions = [
-  { value: "", label: "No logo" },
-  {
-    value: "assets/logos/cultural-avellaneda.png",
-    label: "Club Avellaneda",
-    name: "Club Avellaneda",
-    short: "AVE",
-    color: "#e42f25"
-  },
-  {
-    value: "assets/logos/ncm.png",
-    label: "Midland",
-    name: "Midland",
-    short: "MID",
-    color: "#123f9d"
-  },
-  {
-    value: "assets/logos/club-winners.png",
-    label: "El Propio - Winners",
-    name: "El Propio - Winners",
-    short: "WIN",
-    color: "#173b7a"
-  },
-  {
-    value: "assets/logos/club-san-pedro.png",
-    label: "Club San Pedro",
-    name: "Club San Pedro",
-    short: "SP",
-    color: "#20a8b4"
-  }
-];
+let logoOptions = [{ value: "", label: "No logo" }];
+let logosFolder = "";
 let currentTab = "scorebug";
 const LINEUP_SLOTS = 10; // 9 bateadores + FLEX
 const POSITIONS = ["", "P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DP", "EP"];
@@ -81,11 +52,101 @@ document.querySelectorAll("[data-url]").forEach(element => {
   element.textContent = `${location.origin}/graphics.html`;
 });
 
-document.querySelectorAll('select[data-path$=".logo"]').forEach(select => {
-  select.innerHTML = teamLogoOptions
-    .map(option => `<option value="${option.value}">${option.label}</option>`)
-    .join("");
-});
+function fillLogoSelects() {
+  document.querySelectorAll('select[data-path$=".logo"]').forEach(select => {
+    const current = state ? getPath(state, select.dataset.path) || "" : select.value;
+    const options = [...logoOptions];
+    if (current && !options.some(option => option.value === current)) {
+      options.push({ value: current, label: `${decodeURIComponent(current.split("/").pop())} (no encontrado)` });
+    }
+    let lastSource = "";
+    select.innerHTML = options.map(option => {
+      const group = option.source && option.source !== lastSource ? `<option disabled>── ${option.source === "Logos" ? "Carpeta Logos" : "Logos del panel"} ──</option>` : "";
+      if (option.source) lastSource = option.source;
+      return `${group}<option value="${escAttr(option.value)}">${escAttr(option.label)}</option>`;
+    }).join("");
+    select.value = current;
+    renderLogoPreview(select);
+  });
+}
+
+async function loadLogos() {
+  const data = await fetch("/api/logos", { cache: "no-store" }).then(r => r.json());
+  if (!data.ok) throw new Error(data.error || "No se pudieron leer los logos.");
+  logosFolder = data.folder || "";
+  logoOptions = [{ value: "", label: "No logo" }, ...data.logos];
+  fillLogoSelects();
+  document.querySelectorAll(".logo-upload-btn").forEach(button => { button.title = `Se guarda en ${logosFolder}`; });
+}
+
+function teamCatalog() {
+  return Array.isArray(state?.excel?.teams) ? state.excel.teams : [];
+}
+
+function resolveLogo(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (/^(logos|assets)\//i.test(text)) return text;
+  const lower = text.toLowerCase();
+  const match = logoOptions.find(option => option.file && (option.file.toLowerCase() === lower || option.label.toLowerCase() === lower || option.file.toLowerCase().startsWith(`${lower}.`)));
+  return match ? match.value : "";
+}
+
+function fillTeamPresetSelects() {
+  const teams = teamCatalog();
+  document.querySelectorAll("[data-team-preset]").forEach(select => {
+    const side = select.dataset.teamPreset;
+    const currentName = state.match.teams[side].name;
+    select.innerHTML = `<option value="">${teams.length ? "Elegir equipo…" : "Sin hoja EQUIPOS en el Excel"}</option>` +
+      teams.map((team, index) => `<option value="${index}" ${team.name === currentName ? "selected" : ""}>${escAttr(team.name)}${team.short ? ` (${escAttr(team.short)})` : ""}</option>`).join("");
+  });
+}
+
+function applyTeamPreset(side, index) {
+  const team = teamCatalog()[Number(index)];
+  if (!team) return;
+  readForm();
+  const target = state.match.teams[side];
+  target.name = team.name;
+  if (team.short) target.short = team.short;
+  if (/^#[0-9a-f]{3,6}$/i.test(team.color || "")) target.color = team.color;
+  const logo = resolveLogo(team.logo);
+  if (logo) target.logo = logo;
+  else if (team.logo) setStatus(`No encontré el logo "${team.logo}" en la carpeta Logos.`, true);
+  fillForm();
+  scheduleSave();
+}
+
+async function uploadLogo(side) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/png,image/jpeg,image/webp,image/svg+xml,image/gif";
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      setStatus(`Subiendo ${file.name}...`);
+      const response = await fetch(`/api/logos/upload?name=${encodeURIComponent(file.name)}`, { method: "POST", body: file });
+      const payload = await response.json();
+      if (!payload.ok) throw new Error(payload.error || "No se pudo subir el logo.");
+      logoOptions = [{ value: "", label: "No logo" }, ...payload.logos];
+      readForm();
+      state.match.teams[side].logo = payload.value;
+      fillForm();
+      await save();
+      setStatus(`Logo guardado en la carpeta Logos y asignado a ${state.match.teams[side].name}.`);
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  });
+  input.click();
+}
+
+document.querySelectorAll("[data-team-preset]").forEach(select => select.addEventListener("change", () => applyTeamPreset(select.dataset.teamPreset, select.value)));
+document.querySelectorAll("[data-logo-upload]").forEach(button => button.addEventListener("click", event => {
+  event.preventDefault();
+  uploadLogo(button.dataset.logoUpload);
+}));
 
 document.querySelectorAll("[data-overlay-in]").forEach(button => button.textContent = "In");
 document.querySelectorAll("[data-overlay-out]").forEach(button => button.textContent = "Out");
@@ -136,6 +197,7 @@ function parseValue(path, value, type) {
   if (value === "true") return true;
   if (value === "false") return false;
   if (path.endsWith(".line")) {
+    if (!String(value).trim()) return [];
     return String(value).split(",").map(item => Number(item.trim()) || 0);
   }
   return value;
@@ -229,6 +291,8 @@ function fillForm() {
     else field.value = value;
     if (path.endsWith(".logo")) renderLogoPreview(field);
   }
+  fillLogoSelects();
+  fillTeamPresetSelects();
   fillPlayerPicker();
   renderLineupBuilders();
   renderBaseControl();
@@ -250,13 +314,11 @@ function renderLogoPreview(field) {
 }
 
 function applyTeamLogoPreset(field) {
-  const preset = teamLogoOptions.find(option => option.value === field.value);
-  if (!preset?.name) return;
+  // Si el logo elegido pertenece a un equipo de la hoja EQUIPOS, completa nombre, sigla y color.
+  const index = teamCatalog().findIndex(team => team.logo && resolveLogo(team.logo) === field.value);
+  if (index < 0) return;
   const side = field.dataset.path.includes(".away.") ? "away" : "home";
-  state.match.teams[side].name = preset.name;
-  state.match.teams[side].short = preset.short;
-  state.match.teams[side].color = preset.color;
-  fillForm();
+  applyTeamPreset(side, index);
 }
 
 function readForm() {
@@ -573,6 +635,7 @@ async function importExcelData() {
   const response = await fetch("/api/import-excel", { method: "POST" });
   const payload = await response.json();
   if (!response.ok || !payload.ok) throw new Error(payload.error || "Could not import Excel data.");
+  await loadLogos().catch(() => {});
   applyRemoteState(payload.state, "Excel synced. Rosters, umpires and player lists updated.");
   updatePreviewFrame();
   setStatus("Excel synced. Rosters, umpires and player lists updated.");
@@ -646,6 +709,7 @@ fetch("/api/network").then(r => r.json()).then(data => {
 }).catch(() => {});
 
 load()
+  .then(() => loadLogos().catch(error => setStatus(error.message, true)))
   .then(connectStateEvents)
   .catch(error => setStatus(error.message, true));
 

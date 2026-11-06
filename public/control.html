@@ -450,11 +450,19 @@
           <label>Home errors <input data-path="match.teams.home.errors" type="number" min="0"></label>
           <label>Away color <input data-path="match.teams.away.color" type="color"></label>
           <label>Home color <input data-path="match.teams.home.color" type="color"></label>
+          <label>Away equipo (Excel)
+            <select data-team-preset="away"></select>
+          </label>
+          <label>Home equipo (Excel)
+            <select data-team-preset="home"></select>
+          </label>
           <label>Away logo
             <select data-path="match.teams.away.logo"></select>
+            <button type="button" class="btn secondary logo-upload-btn" data-logo-upload="away">Subir logo</button>
           </label>
           <label>Home logo
             <select data-path="match.teams.home.logo"></select>
+            <button type="button" class="btn secondary logo-upload-btn" data-logo-upload="home">Subir logo</button>
           </label>
           <label>Away line <input data-path="match.teams.away.line" placeholder="0,2,0,1,0,0,0"></label>
           <label>Home line <input data-path="match.teams.home.line" placeholder="1,0,2,1,0,0,0"></label>

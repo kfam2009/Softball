@@ -23,8 +23,14 @@ const mime = {
   ".css": "text/css; charset=utf-8",
   ".js": "application/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
-  ".png": "image/png"
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml",
+  ".gif": "image/gif"
 };
+const imageExtensions = new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif"]);
 
 function ensureState() {
   if (!fs.existsSync(dataRoot)) fs.mkdirSync(dataRoot, { recursive: true });
@@ -139,6 +145,95 @@ function broadcast(state) {
 }
 
 const undoStack = [];
+
+// ---------- Logos ----------
+// Carpeta "Logos" al lado del Datos.xlsx (o la de SB_LOGOS). Cualquier imagen ahi aparece en el panel.
+function logosDir() {
+  const dir = process.env.SB_LOGOS || path.join(path.dirname(excelPath), "Logos");
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function prettyName(file) {
+  return path.basename(file, path.extname(file)).replace(/[-_]+/g, " ").trim();
+}
+
+function listLogos() {
+  const list = [];
+  const userDir = logosDir();
+  for (const file of fs.readdirSync(userDir).sort((a, b) => a.localeCompare(b))) {
+    if (imageExtensions.has(path.extname(file).toLowerCase())) {
+      list.push({ value: `logos/${encodeURIComponent(file)}`, label: prettyName(file), file, source: "Logos" });
+    }
+  }
+  const builtIn = path.join(publicRoot, "assets", "logos");
+  if (fs.existsSync(builtIn)) {
+    for (const file of fs.readdirSync(builtIn).sort()) {
+      if (imageExtensions.has(path.extname(file).toLowerCase())) {
+        list.push({ value: `assets/logos/${file}`, label: prettyName(file), file, source: "Panel" });
+      }
+    }
+  }
+  return list;
+}
+
+function safeLogoName(name) {
+  const ext = path.extname(String(name || "")).toLowerCase();
+  if (!imageExtensions.has(ext)) throw new Error("Formato no soportado. Usar PNG, JPG, WEBP, SVG o GIF.");
+  const base = path.basename(String(name), path.extname(String(name)))
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9 _-]+/g, "").trim().replace(/\s+/g, "-") || "logo";
+  return `${base.slice(0, 60)}${ext}`;
+}
+
+function handleLogoUpload(req, res, url) {
+  let fileName;
+  try {
+    fileName = safeLogoName(url.searchParams.get("name"));
+  } catch (error) {
+    return sendJson(res, { ok: false, error: error.message }, 400);
+  }
+  const chunks = [];
+  let size = 0;
+  req.on("data", chunk => {
+    size += chunk.length;
+    if (size > 15 * 1024 * 1024) {
+      sendJson(res, { ok: false, error: "El archivo supera 15 MB." }, 413);
+      req.destroy();
+      return;
+    }
+    chunks.push(chunk);
+  });
+  req.on("end", () => {
+    if (res.writableEnded) return;
+    try {
+      fs.writeFileSync(path.join(logosDir(), fileName), Buffer.concat(chunks));
+      sendJson(res, { ok: true, value: `logos/${encodeURIComponent(fileName)}`, logos: listLogos() });
+    } catch (error) {
+      sendJson(res, { ok: false, error: error.message }, 500);
+    }
+  });
+}
+
+function serveLogo(res, urlPath) {
+  const name = decodeURIComponent(urlPath.slice("/logos/".length));
+  const dir = logosDir();
+  const file = path.resolve(dir, name);
+  if (!file.startsWith(path.resolve(dir) + path.sep) || !imageExtensions.has(path.extname(file).toLowerCase())) {
+    res.writeHead(403);
+    res.end("Forbidden");
+    return;
+  }
+  fs.readFile(file, (error, data) => {
+    if (error) {
+      res.writeHead(404);
+      res.end("Not found");
+      return;
+    }
+    res.writeHead(200, { "Content-Type": mime[path.extname(file).toLowerCase()] || "application/octet-stream", "Cache-Control": "no-store" });
+    res.end(data);
+  });
+}
 
 function qrSvg(text) {
   const QRCode = require("./vendor/QRCode");
@@ -271,6 +366,7 @@ function applyExcelToState(state, excel) {
     home: excel.home,
     away: excel.away,
     umpires: excel.umpires,
+    teams: excel.teams || [],
     lineupHome: excel.lineupHome || [],
     lineupAway: excel.lineupAway || []
   };
@@ -502,6 +598,22 @@ function createServer() {
 
     if (req.method === "POST" && url.pathname === "/api/replay/open") {
       return openReplayPanel(res);
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/logos") {
+      try {
+        return sendJson(res, { ok: true, folder: logosDir(), logos: listLogos() });
+      } catch (error) {
+        return sendJson(res, { ok: false, error: error.message }, 500);
+      }
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/logos/upload") {
+      return handleLogoUpload(req, res, url);
+    }
+
+    if (req.method === "GET" && url.pathname.startsWith("/logos/")) {
+      return serveLogo(res, url.pathname);
     }
 
     if (req.method === "GET" && url.pathname === "/api/network") {
