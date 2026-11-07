@@ -411,6 +411,37 @@ function vmixCall(params) {
   });
 }
 
+// Velocidad del replay con rampa gradual: la hace el servidor (el navegador frena sus
+// temporizadores cuando la pestana queda en segundo plano y la rampa se cortaba).
+const speedRamp = { target: null, current: null, sent: null, input: "6", timer: null };
+const SPEED_MIN = 0.05, SPEED_STEP = 0.03, SPEED_TICK = 50;
+function sendReplaySpeed(value) {
+  speedRamp.sent = value;
+  return vmixCall({ Function: "ReplaySetSpeed", Input: speedRamp.input, Channel: "Current", Value: value }).catch(() => {});
+}
+function stepReplaySpeed() {
+  const diff = speedRamp.target - speedRamp.current;
+  speedRamp.current = Math.abs(diff) <= SPEED_STEP ? speedRamp.target : speedRamp.current + Math.sign(diff) * SPEED_STEP;
+  const value = Math.round(speedRamp.current * 100) / 100;
+  if (value !== speedRamp.sent) sendReplaySpeed(value);
+  if (speedRamp.current === speedRamp.target) { clearInterval(speedRamp.timer); speedRamp.timer = null; }
+}
+function setReplaySpeed({ target, input, now }) {
+  if (input) speedRamp.input = String(input);
+  if (target !== undefined && target !== null) speedRamp.target = Math.max(SPEED_MIN, Math.min(1, Number(target) || 1));
+  if (speedRamp.target === null) return;
+  if (now || speedRamp.current === null) {
+    // Aplicar ya (al tirar una repe vMix usa la velocidad del evento): se manda dos veces por si vMix la pisa.
+    if (speedRamp.timer) { clearInterval(speedRamp.timer); speedRamp.timer = null; }
+    speedRamp.current = speedRamp.target;
+    const value = Math.round(speedRamp.target * 100) / 100;
+    sendReplaySpeed(value);
+    if (now) setTimeout(() => sendReplaySpeed(value), 300);
+    return;
+  }
+  if (!speedRamp.timer) speedRamp.timer = setInterval(stepReplaySpeed, SPEED_TICK);
+}
+
 const midiConfigPath = path.join(root, "data", "midi.json");
 
 function readMidiConfig() {
@@ -923,6 +954,20 @@ function createServer() {
       return openReplayPanel(res);
     }
 
+    if (req.method === "POST" && url.pathname === "/api/replay-speed") {
+      let raw = "";
+      req.on("data", chunk => raw += chunk);
+      req.on("end", () => {
+        try {
+          setReplaySpeed(JSON.parse(raw || "{}"));
+          sendJson(res, { ok: true, target: speedRamp.target });
+        } catch (error) {
+          sendJson(res, { ok: false, error: error.message }, 400);
+        }
+      });
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/vmix") {
       let raw = "";
       req.on("data", chunk => raw += chunk);
@@ -939,7 +984,9 @@ function createServer() {
           const results = [];
           for (const call of calls) {
             if (!call.Function) throw new Error("Falta Function");
-            results.push(await vmixCall(call));
+            const { _delay, ...params } = call;   // _delay: esperar (ms) antes de esta llamada
+            if (_delay) await new Promise(resolve => setTimeout(resolve, Math.min(10000, Number(_delay) || 0)));
+            results.push(await vmixCall(params));
           }
           const failed = results.find(result => result.status !== 200);
           sendJson(res, { ok: !failed, results, error: failed ? failed.body : undefined }, failed ? 502 : 200);

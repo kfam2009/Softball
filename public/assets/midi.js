@@ -25,10 +25,7 @@
   let lastMessage = "";
   let saveTimer = null;
   let jogPending = 0;
-  let jogTimer = null;
   let jogHistory = [];
-  let speedTimer = null;
-  let speedValue = null;
   let liveState = null;
   let lastAssigned = { key: "", time: 0 };
   let lastCameraInput = "";   // ultima camara cortada desde el controlador
@@ -82,9 +79,8 @@
         const target = returnInput || lastCameraInput || config.cameras.find(Boolean);
         if (!target) throw new Error("No sé a qué cámara volver: cortá una cámara primero.");
         await callVmix([vmix(`Stinger${config.stinger === "2" ? 2 : 1}`, { Input: target })], `Volviendo a input ${target} con stinger ${config.stinger}`);
-        setTimeout(() => {
-          callVmix([vmix("ReplayStopEvents", { Input: replayInput() })], "Replay detenido").catch(error => flash(error.message, true));
-        }, Number(config.returnDelay || 1200));
+        // La espera la hace el servidor (el navegador demora sus temporizadores en segundo plano).
+        callVmix([vmix("ReplayStopEvents", { Input: replayInput(), _delay: Number(config.returnDelay || 1200) })], "Replay detenido").catch(error => flash(error.message, true));
         returnInput = "";
       }
     },
@@ -171,14 +167,22 @@
     jogHistory.push(now);
     const accel = jogHistory.length > 8 ? 4 : jogHistory.length > 4 ? 2 : 1;   // girar rapido = saltos mas grandes
     jogPending += delta * accel * Number(config.jogStep || 1);
-    if (!jogTimer) jogTimer = setTimeout(flushJog, 40);
+    if (!jogBusy) flushJog();
   }
 
+  // Manda el jog acumulado; mientras vMix responde se siguen sumando cuadros (sin temporizadores).
+  let jogBusy = false;
   async function flushJog() {
-    jogTimer = null;
-    const frames = jogPending;
-    jogPending = 0;
-    if (!frames) return;
+    jogBusy = true;
+    while (jogPending) {
+      const frames = jogPending;
+      jogPending = 0;
+      await sendJog(frames);
+    }
+    jogBusy = false;
+  }
+
+  async function sendJog(frames) {
     const fn = config.jogMode === "in" ? "ReplayMoveSelectedInPoint" : config.jogMode === "out" ? "ReplayMoveSelectedOutPoint" : "ReplayJumpFrames";
     const call = { Function: fn, Input: replayInput(), Value: frames };
     if (fn === "ReplayJumpFrames") call.Channel = "Current";
@@ -189,47 +193,41 @@
     }
   }
 
-  // Velocidad del replay: el fader marca el objetivo y la velocidad va hacia ahi de a poco (sin saltos).
+  // Manda siempre el ultimo valor sin usar temporizadores del navegador
+  // (Chrome los frena cuando la pestana queda tapada o en segundo plano).
+  function latest(sendFn) {
+    let busy = false, pending;
+    const run = async () => {
+      busy = true;
+      while (pending !== undefined) {
+        const value = pending;
+        pending = undefined;
+        try { await sendFn(value); } catch (error) { flash(error.message, true); }
+      }
+      busy = false;
+    };
+    return value => { pending = value; if (!busy) run(); };
+  }
+
+  // Velocidad del replay: el fader marca el objetivo y el servidor del panel hace la rampa gradual.
   let speedTarget = null;
-  let speedCurrent = null;
-  let speedSent = null;
-  let speedRamp = null;
   const absoluteKeys = new Set();  // controles que ya mandaron valores de fader (no de perilla)
   const SPEED_MIN = 0.05;
-  const SPEED_STEP = 0.03;      // cambio maximo por paso
-  const SPEED_TICK = 50;        // ms entre pasos  (=> ~0.6 de velocidad por segundo)
+  const postSpeed = latest(async body => {
+    const response = await fetch("/api/replay-speed", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!response.ok) throw new Error("No se pudo cambiar la velocidad");
+    flash(`Replay velocidad ${Math.round((body.target ?? speedTarget) * 100)}%`);
+  });
 
   function setSpeedTarget(target) {
     speedTarget = Math.max(SPEED_MIN, Math.min(1, target));
-    if (speedCurrent === null) speedCurrent = speedTarget;
-    if (!speedRamp) speedRamp = setInterval(stepSpeed, SPEED_TICK);
-  }
-
-  function stepSpeed() {
-    const diff = speedTarget - speedCurrent;
-    speedCurrent = Math.abs(diff) <= SPEED_STEP ? speedTarget : speedCurrent + Math.sign(diff) * SPEED_STEP;
-    const value = Math.round(speedCurrent * 100) / 100;
-    if (value !== speedSent) {
-      speedSent = value;
-      callVmix([{ Function: "ReplaySetSpeed", Input: replayInput(), Channel: "Current", Value: value }], `Replay velocidad ${Math.round(value * 100)}%`)
-        .catch(error => flash(error.message, true));
-    }
-    if (speedCurrent === speedTarget) {
-      clearInterval(speedRamp);
-      speedRamp = null;
-    }
+    postSpeed({ target: speedTarget, input: replayInput() });
   }
 
   // vMix reproduce cada evento a su propia velocidad: al tirar una repe se vuelve a mandar la del fader.
   function applyFaderSpeed() {
     if (speedTarget === null) return;            // el fader todavia no se movio
-    if (speedRamp) { clearInterval(speedRamp); speedRamp = null; }
-    speedCurrent = speedTarget;
-    const value = Math.round(speedTarget * 100) / 100;
-    const send = () => callVmix([{ Function: "ReplaySetSpeed", Input: replayInput(), Channel: "Current", Value: value }], `Replay velocidad ${Math.round(value * 100)}%`).catch(error => flash(error.message, true));
-    speedSent = value;
-    send();
-    setTimeout(send, 300);                       // por si vMix la pisa al arrancar el evento
+    postSpeed({ target: speedTarget, input: replayInput(), now: true });
   }
 
   function onSpeed(msg) {
@@ -243,7 +241,16 @@
   }
 
   // Volumen: el fader manda SetVolume al input configurado (0-100), sin saturar vMix.
-  const volumeState = [{}, {}];
+  const volumeState = [0, 1].map(index => ({
+    level: null,
+    sent: null,
+    send: latest(async value => {
+      const input = config.volumeInputs?.[index];
+      if (!input || value === volumeState[index].sent) return;
+      volumeState[index].sent = value;
+      await callVmix([{ Function: "SetVolume", Input: input, Value: value }], `Volumen input ${input}: ${value}%`);
+    })
+  }));
   function onVolume(index, msg) {
     const st = volumeState[index];
     let level;
@@ -255,17 +262,7 @@
       else level = msg.value / 127;
     }
     st.level = Math.max(0, Math.min(1, level));
-    if (st.timer) return;                     // ya hay un envio programado: manda el ultimo valor
-    const send = () => {
-      const value = Math.round(st.level * 100);
-      const input = config.volumeInputs?.[index];
-      if (value !== st.sent && input) {
-        st.sent = value;
-        callVmix([{ Function: "SetVolume", Input: input, Value: value }], `Volumen input ${input}: ${value}%`).catch(error => flash(error.message, true));
-      }
-      st.timer = setTimeout(() => { st.timer = null; if (Math.round(st.level * 100) !== st.sent) onVolume(index, { type: "pb", value: st.level * 16383 }); }, 40);
-    };
-    send();
+    st.send(Math.round(st.level * 100));
   }
 
   // ---------- MIDI ----------
