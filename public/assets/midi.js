@@ -69,9 +69,10 @@
       id: "replay-air", group: "Replay", label: "Play evento seleccionado al aire (con stinger de vMix)", hint: "Marker ▶",
       run: async () => {
         await rememberActive();
-        return callVmix([
+        await callVmix([
           vmix("ReplayPlaySelectedEventToOutput", { Input: replayInput(), Channel: "Current" })
         ], "Replay al aire (evento seleccionado)");
+        applyFaderSpeed();   // la repe sale a la velocidad que marca el fader
       }
     },
     {
@@ -87,7 +88,7 @@
         returnInput = "";
       }
     },
-    { id: "replay-playpause", group: "Replay", label: "Play / Pausa replay", hint: "▶ Play", run: () => callVmix([vmix("ReplayPlayPause", { Input: replayInput(), Channel: "Current" })], "Replay: Play/Pausa") },
+    { id: "replay-playpause", group: "Replay", label: "Play / Pausa replay", hint: "▶ Play", run: async () => { await callVmix([vmix("ReplayPlayPause", { Input: replayInput(), Channel: "Current" })], "Replay: Play/Pausa"); applyFaderSpeed(); } },
     { id: "replay-live", group: "Replay", label: "Replay a vivo (Live)", hint: "Cycle", run: () => callVmix([vmix("ReplayLive", { Input: replayInput() })], "Replay: Live") },
     { id: "replay-jog", group: "Replay", label: "Jog (corre el comienzo del replay seleccionado)", hint: "Rueda jog", kind: "relative" },
     {
@@ -217,6 +218,18 @@
       clearInterval(speedRamp);
       speedRamp = null;
     }
+  }
+
+  // vMix reproduce cada evento a su propia velocidad: al tirar una repe se vuelve a mandar la del fader.
+  function applyFaderSpeed() {
+    if (speedTarget === null) return;            // el fader todavia no se movio
+    if (speedRamp) { clearInterval(speedRamp); speedRamp = null; }
+    speedCurrent = speedTarget;
+    const value = Math.round(speedTarget * 100) / 100;
+    const send = () => callVmix([{ Function: "ReplaySetSpeed", Input: replayInput(), Channel: "Current", Value: value }], `Replay velocidad ${Math.round(value * 100)}%`).catch(error => flash(error.message, true));
+    speedSent = value;
+    send();
+    setTimeout(send, 300);                       // por si vMix la pisa al arrancar el evento
   }
 
   function onSpeed(msg) {
