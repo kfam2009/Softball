@@ -76,7 +76,7 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 - Pestaña **Domos**: lista de cámaras (nombre, marca, IP, puerto, usuario, clave) con **+ Cámara / Eliminar / Guardar cámara / Probar**. Se guardan por PC en `data/domos.json` (no se sube al GitHub; la clave no vuelve al navegador, se muestra `••••`).
 - Pad de 8 flechas + **■** (frenar) y **Zoom + / −**: mantener apretado para mover, soltar para parar. Un toque corto mueve un **paso** (Corto / Medio / Largo).
 - **Posiciones guardadas** 1–6 por cámara: "Guardar acá" graba la posición actual, "Ir a" la recupera (en Foscam son los presets PG1–PG6).
-- **Ver cámara**: foto en vivo cada 1,5 s (la pide el panel a la cámara).
+- **Ver cámara**: primero intenta **video en vivo (MJPEG)**; si la cámara no lo da, muestra **fotos seguidas** (hasta ~10 por segundo, según lo que aguante la cámara y la red). Abajo de la vista dice qué modo está usando. Todo pasa por el panel: la clave no viaja al navegador.
 - Marcas: **Foscam** (API CGI, puerto por defecto 88). **Longse (ONVIF)** se activa cuando se conecte la cámara para probarla.
 - El panel (la PC) le manda los comandos a la IP de la cámara: tiene que llegar por la red local o ZeroTier.
 

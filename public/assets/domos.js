@@ -6,7 +6,6 @@
   const html = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
   const MARCA_LABEL = { foscam: "Foscam", longse: "Longse (ONVIF)" };
   let state = { lista: [], sel: 0, paso: 400, marcas: ["foscam", "longse"] };
-  let snapTimer = null;
   let msgTimer = null;
 
   root.innerHTML = `
@@ -55,6 +54,7 @@
       <section class="card">
         <h2>Vista</h2>
         <div class="domvista"><img id="dom-img" alt=""><span id="dom-img-msg">Tocá "Ver cámara"</span></div>
+        <p class="dom-hint" id="dom-vista-modo"></p>
       </section>
     </div>
     <section class="card wide">
@@ -200,24 +200,74 @@
     $("#dom-guardar-p").appendChild(g);
   }
 
-  // Ver camara: foto en vivo cada ~1.5 s (proxy del panel, asi la clave no viaja al navegador).
+  // Ver camara: primero intenta video MJPEG; si la camara no lo da, fotos seguidas (la siguiente apenas llega la anterior).
+  // Todo pasa por el panel, asi la clave no viaja al navegador.
   const img = $("#dom-img");
-  img.addEventListener("load", () => { img.classList.add("on"); $("#dom-img-msg").textContent = ""; });
-  img.addEventListener("error", () => { img.classList.remove("on"); $("#dom-img-msg").textContent = "No llega imagen (revisá Probar)"; });
+  let viewing = 0;          // se incrementa al empezar/parar: corta los ciclos viejos
+  let lastUrl = null;
+  const setInfo = text => { $("#dom-img-msg").textContent = text; };
   function stopSnap() {
-    clearInterval(snapTimer); snapTimer = null;
-    img.classList.remove("on"); img.removeAttribute("src");
-    $("#dom-img-msg").textContent = 'Tocá "Ver cámara"';
+    viewing++;
+    img.onload = img.onerror = null;
+    img.classList.remove("on");
+    img.removeAttribute("src");
+    if (lastUrl) { URL.revokeObjectURL(lastUrl); lastUrl = null; }
+    setInfo('Tocá "Ver cámara"');
     $("#dom-ver").textContent = "Ver cámara";
+    $("#dom-vista-modo").textContent = "";
   }
-  $("#dom-ver").addEventListener("click", () => {
-    if (snapTimer) return stopSnap();
-    if (!camara()) return msg('Primero agregá una cámara', true);
-    const refrescar = () => { img.src = `/domo/snap?idx=${state.sel}&t=${Date.now()}`; };
-    refrescar();
-    snapTimer = setInterval(refrescar, 1500);
+  function startStream(token) {
+    return new Promise(resolve => {
+      const timer = setTimeout(() => resolve(false), 4000);
+      img.onload = () => { clearTimeout(timer); resolve(token === viewing); };
+      img.onerror = () => { clearTimeout(timer); resolve(false); };
+      img.src = `/domo/stream?idx=${state.sel}&t=${Date.now()}`;
+    });
+  }
+  async function snapLoop(token) {
+    let frames = 0, since = Date.now(), errors = 0;
+    while (token === viewing) {
+      const t0 = Date.now();
+      try {
+        const response = await fetch(`/domo/snap?idx=${state.sel}&t=${t0}`, { cache: "no-store" });
+        if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "No llega imagen");
+        const blob = await response.blob();
+        if (token !== viewing) break;
+        const objectUrl = URL.createObjectURL(blob);
+        await new Promise(resolve => { img.onload = img.onerror = resolve; img.src = objectUrl; });
+        if (lastUrl) URL.revokeObjectURL(lastUrl);
+        lastUrl = objectUrl;
+        img.classList.add("on"); setInfo(""); errors = 0;
+        frames++;
+        if (Date.now() - since > 2000) {
+          $("#dom-vista-modo").textContent = `Fotos seguidas · ${(frames * 1000 / (Date.now() - since)).toFixed(1)} por segundo`;
+          frames = 0; since = Date.now();
+        }
+      } catch (error) {
+        errors++;
+        if (!img.classList.contains("on")) setInfo(error.message);
+        await new Promise(resolve => setTimeout(resolve, Math.min(3000, 500 * errors)));
+      }
+      const wait = 100 - (Date.now() - t0);   // como mucho ~10 por segundo
+      if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
+    }
+  }
+  $("#dom-ver").addEventListener("click", async () => {
+    if ($("#dom-ver").textContent !== "Ver cámara") return stopSnap();
+    if (!camara()) return msg("Primero agregá una cámara", true);
+    const token = ++viewing;
     $("#dom-ver").textContent = "Dejar de ver";
-    $("#dom-img-msg").textContent = "Cargando…";
+    setInfo("Conectando…");
+    if (await startStream(token)) {
+      img.classList.add("on"); setInfo("");
+      $("#dom-vista-modo").textContent = "Video en vivo (MJPEG)";
+      img.onerror = () => { if (token === viewing) { img.classList.remove("on"); setInfo("Se cortó el video: tocá Ver cámara de nuevo"); } };
+      return;
+    }
+    if (token !== viewing) return;
+    img.onload = img.onerror = null;
+    img.removeAttribute("src");
+    snapLoop(token);
   });
 
   load();

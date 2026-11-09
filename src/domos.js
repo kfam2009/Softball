@@ -52,7 +52,9 @@ function foscam(cam) {
     async parar() { await cgi("ptzStopRun"); await cgi("zoomStop"); },
     async guardarPreset(n) { await cgi("ptzAddPresetPoint", `&name=${nombrePreset(n)}`); },
     async irPreset(n) { await cgi("ptzGotoPresetPoint", `&name=${nombrePreset(n)}`); },
-    snapshotUrl: () => url("snapPicture2")
+    snapshotUrl: () => url("snapPicture2"),
+    // Video MJPEG (si la camara lo tiene: usa el sub-stream en formato MJPEG).
+    mjpegUrl: () => `http://${cam.host}:${cam.puerto || 88}/cgi-bin/CGIStream.cgi?cmd=GetMJStream&${auth}`
   };
 }
 

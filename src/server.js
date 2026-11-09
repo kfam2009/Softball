@@ -1031,6 +1031,31 @@ function createServer() {
       return sendJson(res, { ok: true, domos: publicDomos() });
     }
 
+    if (req.method === "GET" && url.pathname === "/domo/stream") {
+      // Video MJPEG de la camara pasado por el panel (la clave no viaja al navegador).
+      try {
+        const { cam } = domoActual(url.searchParams.get("idx"));
+        const dv = domos.crearDomo(cam);
+        if (!dv.mjpegUrl) throw new Error("Esta cámara no da video MJPEG");
+        const upstream = http.get(dv.mjpegUrl(), camRes => {
+          const type = String(camRes.headers["content-type"] || "");
+          if (camRes.statusCode !== 200 || !type.toLowerCase().includes("multipart")) {
+            camRes.resume();
+            return sendJson(res, { ok: false, error: "La cámara no da video MJPEG" }, 502);
+          }
+          res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store", Connection: "close" });
+          camRes.pipe(res);
+        });
+        upstream.setTimeout(5000, () => upstream.destroy(new Error("La cámara no responde")));
+        upstream.on("error", error => { if (!res.headersSent) sendJson(res, { ok: false, error: error.message }, 502); else res.end(); });
+        req.on("close", () => upstream.destroy());
+        res.on("close", () => upstream.destroy());
+      } catch (error) {
+        sendJson(res, { ok: false, error: error.message }, 502);
+      }
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/domo/snap") {
       (async () => {
         const { cam } = domoActual(url.searchParams.get("idx"));
