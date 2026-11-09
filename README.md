@@ -72,6 +72,14 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 - **Audio**: **Volumen 1** y **Volumen 2** con faders (por defecto input 1 = cámara 1 e input 11 = música; se cambia en "Volumen 1/2 → input"). Asignar con **Aprender** moviendo el fader. Si vMix tiene un atajo MIDI en el mismo fader, borrarlo en Settings → Shortcuts.
 - **Juego y gráficos**: Ball, Strike, Foul, Out, Carrera, Hit, Error, Cambio de lado, bases, Conteo 0-0, Deshacer, Scorebug / Zócalo / Publicidad In-Out.
 
+## Domos (PTZ)
+- Pestaña **Domos**: lista de cámaras (nombre, marca, IP, puerto, usuario, clave) con **+ Cámara / Eliminar / Guardar cámara / Probar**. Se guardan por PC en `data/domos.json` (no se sube al GitHub; la clave no vuelve al navegador, se muestra `••••`).
+- Pad de 8 flechas + **■** (frenar) y **Zoom + / −**: mantener apretado para mover, soltar para parar. Un toque corto mueve un **paso** (Corto / Medio / Largo).
+- **Posiciones guardadas** 1–6 por cámara: "Guardar acá" graba la posición actual, "Ir a" la recupera (en Foscam son los presets PG1–PG6).
+- **Ver cámara**: foto en vivo cada 1,5 s (la pide el panel a la cámara).
+- Marcas: **Foscam** (API CGI, puerto por defecto 88). **Longse (ONVIF)** se activa cuando se conecte la cámara para probarla.
+- El panel (la PC) le manda los comandos a la IP de la cámara: tiene que llegar por la red local o ZeroTier.
+
 ## Celular (solo scorebug)
 Desde un celular en la misma red (WiFi o **ZeroTier**) abrir `http://IP-DE-LA-PC:8136/m`. En el panel de la PC, arriba a la derecha, aparece la dirección (la de ZeroTier primero); tocándola muestra un **QR** para escanear. La página del celular muestra el nombre de la PC a la que está conectada, así no se confunde si hay dos PCs con el panel en la misma red.
 Botones: Ball, Strike, Foul, Out, Carrera, Hit, Base por bolas, Conteo 0-0, Error, Cambio de lado, Limpiar bases, **Deshacer**, Scorebug In/Out, bases tocando el diamante y correcciones.

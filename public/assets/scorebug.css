@@ -2383,3 +2383,42 @@ textarea {
 .midi-row.learning { background: #ffc83d; }
 .midi-row code { font-size: 12px; }
 .midi-row .logo-upload-btn { margin-top: 0; }
+
+/* ---------- Domos (PTZ) ---------- */
+.dom-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin: 8px 0; }
+.dom-row.dom-center { justify-content: center; align-items: center; }
+.dom-grow { flex: 1 1 260px; }
+.dom-form { margin: 10px 0; }
+.dom-msg { font-weight: 800; color: #1b8a3d; }
+.dom-msg.error { color: #c62828; }
+.dom-hint { margin: 6px 0 0; font-size: 13px; color: #4b535c; }
+.dom-grid { margin-top: 10px; margin-bottom: 10px; }
+.dom-ctrl { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.dompad { display: grid; grid-template-columns: repeat(3, 72px); grid-auto-rows: 72px; gap: 8px; }
+.dbtn {
+  border: 1px solid #2b333c; background: #1f2830; color: #fff; border-radius: 10px;
+  font-size: 28px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  user-select: none; -webkit-user-select: none; touch-action: none;
+}
+.dbtn:hover { filter: brightness(1.25); }
+.dbtn:active, .dbtn.act { background: var(--gold); color: #10151b; transform: translateY(1px); }
+.dbtn.stop { background: #5a1d24; border-color: #8a2a35; color: #ffc2c8; font-size: 22px; }
+.dbtn.zoom { height: 46px; padding: 0 18px; font-size: 15px; letter-spacing: 1px; }
+.domvista {
+  position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.domvista img { width: 100%; height: 100%; object-fit: contain; display: none; }
+.domvista img.on { display: block; }
+.domvista span { position: absolute; color: #c9d1d9; font-weight: 700; }
+.preset-fila { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+.preset-label { width: 110px; font-weight: 800; }
+.preset-row { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+.preset-row button {
+  width: 52px; height: 44px; border: 1px solid #2b333c; background: #1f2830; color: #fff;
+  border-radius: 8px; font-weight: 900; font-size: 17px; cursor: pointer;
+}
+.preset-row button:hover { filter: brightness(1.25); }
+.preset-row.guardar button { background: #4b535c; }
+.preset-row.guardar button:hover { background: var(--gold); color: #10151b; }
+@media (max-width: 900px) { .dom-grid { grid-template-columns: 1fr; } }

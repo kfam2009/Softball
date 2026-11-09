@@ -442,6 +442,79 @@ function setReplaySpeed({ target, input, now }) {
   if (!speedRamp.timer) speedRamp.timer = setInterval(stepReplaySpeed, SPEED_TICK);
 }
 
+// ---------- Domos (PTZ) ----------
+// Se guardan por PC en data/domos.json. La clave nunca vuelve al navegador (se muestra "••••").
+const domos = require("./domos");
+const domosPath = path.join(root, "data", "domos.json");
+const CLAVE_OCULTA = "••••";
+function readDomos() {
+  try {
+    const data = JSON.parse(fs.readFileSync(domosPath, "utf8"));
+    return { lista: Array.isArray(data.lista) ? data.lista : [], sel: Number(data.sel) || 0, paso: Number(data.paso) || 400 };
+  } catch {
+    return { lista: [], sel: 0, paso: 400 };
+  }
+}
+function publicDomos() {
+  const d = readDomos();
+  return { ...d, marcas: domos.MARCAS, lista: d.lista.map(c => ({ ...c, clave: c.clave ? CLAVE_OCULTA : "" })) };
+}
+function saveDomos(body) {
+  const prev = readDomos();
+  const prevById = new Map(prev.lista.map(c => [c.id, c]));
+  const txt = (v, max) => String(v ?? "").trim().slice(0, max);
+  const num = (v, min, max, def) => { const n = Number(v); return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n))) : def; };
+  const lista = (Array.isArray(body.lista) ? body.lista : prev.lista).slice(0, 12).map(c => {
+    const id = txt(c.id, 40) || "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    let clave = String(c.clave ?? "").slice(0, 100);
+    if (clave === "" || clave === CLAVE_OCULTA) clave = prevById.get(id)?.clave || "";
+    const marca = domos.MARCAS.includes(String(c.marca).toLowerCase()) ? String(c.marca).toLowerCase() : "foscam";
+    return { id, nombre: txt(c.nombre, 40) || "Domo", marca, host: txt(c.host, 60).replace(/^https?:\/\//, "").replace(/\/.*$/, ""), puerto: num(c.puerto, 1, 65535, 88), usuario: txt(c.usuario, 40) || "admin", clave };
+  });
+  const next = {
+    lista,
+    sel: Math.max(0, Math.min(Math.max(0, lista.length - 1), num(body.sel ?? prev.sel, 0, 100, 0))),
+    paso: "paso" in body ? num(body.paso, 100, 2000, 400) : prev.paso
+  };
+  fs.mkdirSync(path.dirname(domosPath), { recursive: true });
+  fs.writeFileSync(domosPath, JSON.stringify(next, null, 2));
+  return next;
+}
+function domoActual(idx) {
+  const d = readDomos();
+  const i = idx === undefined || idx === null || idx === "" ? d.sel : Number(idx);
+  return { cam: d.lista[i], paso: d.paso };
+}
+// Los comandos a cada camara van en fila: asi un "parar" nunca llega antes que el "mover".
+const domoColas = new Map();
+function enColaDomo(cam, tarea) {
+  const key = cam ? `${cam.host}:${cam.puerto}` : "-";
+  const prev = domoColas.get(key) || Promise.resolve();
+  const next = prev.catch(() => {}).then(tarea);
+  domoColas.set(key, next);
+  return next;
+}
+async function domoAccion(accion, body) {
+  const { cam, paso } = domoActual(body.idx);
+  const dv = domos.crearDomo(cam);
+  if (accion === "probar") return dv.probar();
+  if (accion === "mover") return enColaDomo(cam, () => dv.mover(String(body.dir || "")));
+  if (accion === "zoom") return enColaDomo(cam, () => dv.zoom(String(body.dir || "")));
+  if (accion === "parar") {
+    // Toque corto = un "paso": sigue moviendose hasta completar el paso elegido (corto/medio/largo).
+    const falta = Math.max(0, Math.min(2000, paso - Number(body.heldMs || paso)));
+    return enColaDomo(cam, async () => {
+      if (falta > 0) await new Promise(resolve => setTimeout(resolve, falta));
+      await dv.parar();
+    });
+  }
+  if (accion === "preset") {
+    const n = Math.max(1, Math.min(6, Number(body.n) || 1));
+    return enColaDomo(cam, () => body.accion === "guardar" ? dv.guardarPreset(n) : dv.irPreset(n));
+  }
+  throw new Error("Acción de domo desconocida");
+}
+
 const midiConfigPath = path.join(root, "data", "midi.json");
 
 function readMidiConfig() {
@@ -952,6 +1025,42 @@ function createServer() {
 
     if (req.method === "POST" && url.pathname === "/api/replay/open") {
       return openReplayPanel(res);
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/domos") {
+      return sendJson(res, { ok: true, domos: publicDomos() });
+    }
+
+    if (req.method === "GET" && url.pathname === "/domo/snap") {
+      (async () => {
+        const { cam } = domoActual(url.searchParams.get("idx"));
+        const dv = domos.crearDomo(cam);
+        const shot = await domos.httpGet(dv.snapshotUrl(), 6000);
+        const type = String(shot.headers["content-type"] || "");
+        if (shot.status !== 200 || !type.startsWith("image/")) throw new Error("La cámara no devolvió imagen (revisá usuario y clave)");
+        res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
+        res.end(shot.body);
+      })().catch(error => sendJson(res, { ok: false, error: error.message }, 502));
+      return;
+    }
+
+    if (req.method === "POST" && (url.pathname === "/api/domos" || url.pathname.startsWith("/api/domo/"))) {
+      let raw = "";
+      req.on("data", chunk => raw += chunk);
+      req.on("end", async () => {
+        try {
+          const body = JSON.parse(raw || "{}");
+          if (url.pathname === "/api/domos") {
+            saveDomos(body);
+            return sendJson(res, { ok: true, domos: publicDomos() });
+          }
+          const result = await domoAccion(url.pathname.slice("/api/domo/".length), body);
+          sendJson(res, { ok: true, ...(result || {}) });
+        } catch (error) {
+          sendJson(res, { ok: false, error: error.message }, 502);
+        }
+      });
+      return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/replay-speed") {
