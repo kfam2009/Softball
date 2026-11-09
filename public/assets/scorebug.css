@@ -2410,6 +2410,8 @@ textarea {
 }
 .domvista img { width: 100%; height: 100%; object-fit: contain; display: none; }
 .domvista img.on { display: block; }
+.domvista video { width: 100%; height: 100%; object-fit: contain; display: none; }
+.domvista video.on { display: block; }
 .domvista span { position: absolute; color: #c9d1d9; font-weight: 700; }
 .preset-fila { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
 .preset-label { width: 110px; font-weight: 800; }

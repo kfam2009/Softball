@@ -469,7 +469,7 @@ function saveDomos(body) {
     let clave = String(c.clave ?? "").slice(0, 100);
     if (clave === "" || clave === CLAVE_OCULTA) clave = prevById.get(id)?.clave || "";
     const marca = domos.MARCAS.includes(String(c.marca).toLowerCase()) ? String(c.marca).toLowerCase() : "foscam";
-    return { id, nombre: txt(c.nombre, 40) || "Domo", marca, host: txt(c.host, 60).replace(/^https?:\/\//, "").replace(/\/.*$/, ""), puerto: num(c.puerto, 1, 65535, 88), usuario: txt(c.usuario, 40) || "admin", clave };
+    return { id, nombre: txt(c.nombre, 40) || "Domo", marca, host: txt(c.host, 60).replace(/^https?:\/\//, "").replace(/\/.*$/, ""), puerto: num(c.puerto, 1, 65535, 88), usuario: txt(c.usuario, 40) || "admin", clave, vmixInput: txt(c.vmixInput, 10) };
   });
   const next = {
     lista,
@@ -1112,7 +1112,8 @@ function createServer() {
             const result = await vmixCall({});
             const version = (/<version>([^<]*)/.exec(result.body) || [])[1] || "";
             const active = (/<active>([^<]*)/.exec(result.body) || [])[1] || "";
-            return sendJson(res, { ok: result.status === 200, version, active });
+            const external = /<external>\s*True\s*<\/external>/i.test(result.body);
+            return sendJson(res, { ok: result.status === 200, version, active, external });
           }
           const calls = Array.isArray(body.calls) ? body.calls : [body];
           const results = [];

@@ -23,6 +23,7 @@
         <label>Puerto <input id="dom-puerto" type="number" min="1" max="65535" placeholder="88"></label>
         <label>Usuario <input id="dom-usuario" autocomplete="off" placeholder="admin"></label>
         <label>Clave <input id="dom-clave" type="password" autocomplete="new-password"></label>
+        <label>Input de vMix (para ver fluido) <input id="dom-vmix" placeholder="ej. 1, 3 o 4" autocomplete="off"></label>
       </div>
       <div class="dom-row">
         <button type="button" class="btn" id="dom-guardar">Guardar cámara</button>
@@ -53,7 +54,7 @@
       </section>
       <section class="card">
         <h2>Vista</h2>
-        <div class="domvista"><img id="dom-img" alt=""><span id="dom-img-msg">Tocá "Ver cámara"</span></div>
+        <div class="domvista"><video id="dom-video" autoplay muted playsinline></video><img id="dom-img" alt=""><span id="dom-img-msg">Tocá "Ver cámara"</span></div>
         <p class="dom-hint" id="dom-vista-modo"></p>
       </section>
     </div>
@@ -95,6 +96,7 @@
     $("#dom-puerto").value = cam.puerto || "";
     $("#dom-usuario").value = cam.usuario || "";
     $("#dom-clave").value = cam.clave || "";
+    $("#dom-vmix").value = cam.vmixInput || "";
     $("#dom-paso").value = String(state.paso || 400);
     marcaHint();
   }
@@ -128,11 +130,22 @@
       host: $("#dom-host").value.trim(),
       puerto: Number($("#dom-puerto").value) || 88,
       usuario: $("#dom-usuario").value.trim() || "admin",
-      clave: $("#dom-clave").value
+      clave: $("#dom-clave").value,
+      vmixInput: $("#dom-vmix").value.trim()
     };
   }
 
-  $("#dom-sel").addEventListener("change", event => { stopSnap(); saveAll(state.lista, Number(event.target.value) || 0).catch(error => msg(error.message, true)); });
+  $("#dom-sel").addEventListener("change", async event => {
+    const keepExternal = viewMode === "external";
+    if (!keepExternal) stopSnap();
+    try {
+      await saveAll(state.lista, Number(event.target.value) || 0);
+      if (keepExternal) {
+        if (camara()?.vmixInput) await setExternalInput(camara().vmixInput);
+        else stopSnap();
+      }
+    } catch (error) { msg(error.message, true); }
+  });
   $("#dom-marca").addEventListener("change", marcaHint);
   $("#dom-add").addEventListener("click", () => {
     const lista = state.lista.slice();
@@ -203,11 +216,18 @@
   // Ver camara: primero intenta video MJPEG; si la camara no lo da, fotos seguidas (la siguiente apenas llega la anterior).
   // Todo pasa por el panel, asi la clave no viaja al navegador.
   const img = $("#dom-img");
+  const video = $("#dom-video");
+  let viewMode = "";        // "" | "external" | "mjpeg" | "fotos"
+  let mediaStream = null;
   let viewing = 0;          // se incrementa al empezar/parar: corta los ciclos viejos
   let lastUrl = null;
   const setInfo = text => { $("#dom-img-msg").textContent = text; };
   function stopSnap() {
     viewing++;
+    viewMode = "";
+    if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+    video.srcObject = null;
+    video.classList.remove("on");
     img.onload = img.onerror = null;
     img.classList.remove("on");
     img.removeAttribute("src");
@@ -252,14 +272,65 @@
       if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
     }
   }
+  // ---- Vista fluida por la salida External 2 de vMix ----
+  // El panel pone la External 2 de vMix en el input de la camara y muestra la webcam virtual "vMix Video External 2".
+  async function vmixCalls(calls) {
+    const response = await fetch("/api/vmix", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ calls }) });
+    const payload = await response.json().catch(() => ({}));
+    if (!payload.ok) throw new Error(payload.error || "vMix no respondió (Settings → Web Controller)");
+  }
+  async function setExternalInput(input) {
+    await vmixCalls([{ Function: "SetOutputExternal2", Value: "Input", Input: String(input) }]);
+    $("#dom-vista-modo").textContent = `Video por vMix External 2 · input ${input}`;
+  }
+  async function vmixCamera() {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("Este navegador no deja ver cámaras (usá Chrome o Edge en esta PC)");
+    let devices = await navigator.mediaDevices.enumerateDevices();
+    if (!devices.some(d => d.kind === "videoinput" && d.label)) {
+      // Primero hay que pedir permiso para ver los nombres de las camaras.
+      const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
+      tmp.getTracks().forEach(t => t.stop());
+      devices = await navigator.mediaDevices.enumerateDevices();
+    }
+    const cams = devices.filter(d => d.kind === "videoinput");
+    const dev = cams.find(d => /vmix.*external\s*2/i.test(d.label)) || cams.find(d => /vmix/i.test(d.label));
+    if (!dev) throw new Error(`No aparece la cámara virtual de vMix en esta PC (hay: ${cams.map(d => d.label).join(", ") || "ninguna"})`);
+    return dev;
+  }
+  async function startExternal(token) {
+    const cam = camara();
+    const ping = await fetch("/api/vmix", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ping: true }) }).then(r => r.json()).catch(() => ({}));
+    if (!ping.ok) throw new Error("vMix no responde (Settings → Web Controller activado)");
+    await setExternalInput(cam.vmixInput);
+    if (!ping.external) await vmixCalls([{ Function: "StartExternal" }]);
+    const dev = await vmixCamera();
+    if (token !== viewing) return;
+    mediaStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: dev.deviceId }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } });
+    if (token !== viewing) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; return; }
+    video.srcObject = mediaStream;
+    video.classList.add("on");
+    viewMode = "external";
+    setInfo("");
+    $("#dom-vista-modo").textContent = `Video por vMix External 2 · input ${cam.vmixInput} · ${dev.label}`;
+  }
+
   $("#dom-ver").addEventListener("click", async () => {
     if ($("#dom-ver").textContent !== "Ver cámara") return stopSnap();
     if (!camara()) return msg("Primero agregá una cámara", true);
     const token = ++viewing;
     $("#dom-ver").textContent = "Dejar de ver";
     setInfo("Conectando…");
+    if (camara().vmixInput) {
+      try {
+        return await startExternal(token);
+      } catch (error) {
+        if (token !== viewing) return;
+        msg(`${error.message}. Uso la vista por fotos.`, true);
+      }
+    }
     if (await startStream(token)) {
       img.classList.add("on"); setInfo("");
+      viewMode = "mjpeg";
       $("#dom-vista-modo").textContent = "Video en vivo (MJPEG)";
       img.onerror = () => { if (token === viewing) { img.classList.remove("on"); setInfo("Se cortó el video: tocá Ver cámara de nuevo"); } };
       return;
@@ -267,6 +338,7 @@
     if (token !== viewing) return;
     img.onload = img.onerror = null;
     img.removeAttribute("src");
+    viewMode = "fotos";
     snapLoop(token);
   });
 
