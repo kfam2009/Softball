@@ -28,6 +28,9 @@ La **Defensa** dibuja la cancha con cada jugador en su posición (el DP no apare
 
 El scoreboard muestra las **entradas reglamentarias** (7 por defecto; 5 para infantiles, se cambia en el panel) y agrega columnas si hay extra innings, con totales **R H E**.
 
+## Sponsor al lado del scorebug
+En la pestaña **Scorebug**: "Sponsor al lado del scorebug" (prender/apagar) y "Logo del sponsor" (cualquier imagen de la carpeta **Logos**). Sale a la izquierda del scorebug, misma altura y alineado; entra y sale junto con el scorebug. Por defecto usa `South_logo_amarillo.png` si está en Logos.
+
 ## Excel
 `Datos.xlsx` en la carpeta que contiene `softball-ndi` (o la ruta de la variable `SB_EXCEL`). Hojas **HOME**, **AWAY**, **UMPIRES** y opcional **EQUIPOS**, columnas A/B/C: número, nombre, posición (o rol). Ver `Datos-ejemplo.xlsx`. Después de guardar, **Sync Excel** en el panel.
 

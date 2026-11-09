@@ -101,7 +101,12 @@ function renderScorebug(state) {
   const balls = Number(match.balls || 0);
   const strikes = Number(match.strikes || 0);
   const outs = Number(match.outs || 0);
+  const sponsor = state.sponsorBug || {};
+  const sponsorHtml = sponsor.visible && sponsor.logo
+    ? `<section class="sponsor-bug ${entryClass("scorebug")}"><img src="${esc(assetSrc(sponsor.logo))}" alt=""></section>`
+    : "";
   return `
+    ${sponsorHtml}
     <section class="scorebug softball ${entryClass("scorebug")}">
       <div class="score-grid">
         ${teamRow(match.teams.away, "away")}

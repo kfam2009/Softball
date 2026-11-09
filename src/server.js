@@ -85,6 +85,14 @@ function normalizeState(state) {
     paper: "#f7f3ea",
     white: "#ffffff"
   };
+  // Sponsor al lado del scorebug (por defecto el logo de South si esta en la carpeta Logos).
+  if (!state.sponsorBug || typeof state.sponsorBug !== "object") {
+    let logo = "";
+    try { if (fs.existsSync(path.join(logosDir(), "South_logo_amarillo.png"))) logo = "logos/South_logo_amarillo.png"; } catch {}
+    state.sponsorBug = { visible: Boolean(logo), logo };
+  }
+  state.sponsorBug.visible = Boolean(state.sponsorBug.visible);
+  state.sponsorBug.logo = String(state.sponsorBug.logo || "");
   state.match ||= {};
   const match = state.match;
   match.gameId = String(match.gameId || "").trim();
