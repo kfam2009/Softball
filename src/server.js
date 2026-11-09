@@ -498,6 +498,11 @@ async function domoAccion(accion, body) {
   const { cam, paso } = domoActual(body.idx);
   const dv = domos.crearDomo(cam);
   if (accion === "probar") return dv.probar();
+  if (accion === "wifi") {
+    if (!dv.wifi) throw new Error("Esta marca todavía no informa la señal WiFi");
+    return dv.wifi();
+  }
+  if (accion === "red") return domos.medirRed(dv, () => dv.probar());
   if (accion === "mover") return enColaDomo(cam, () => dv.mover(String(body.dir || "")));
   if (accion === "zoom") return enColaDomo(cam, () => dv.zoom(String(body.dir || "")));
   if (accion === "parar") {

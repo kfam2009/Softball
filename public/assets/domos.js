@@ -59,6 +59,35 @@
       </section>
     </div>
     <section class="card wide">
+      <h2>Medidor de WiFi <small class="dom-sub" id="wifi-cam"></small></h2>
+      <div class="dom-row">
+        <button type="button" class="btn" id="wifi-medir">Medir ahora</button>
+        <label class="dom-check"><input type="checkbox" id="wifi-continuo"> Medir continuo (cada 15 s)</label>
+        <span class="dom-msg" id="wifi-msg"></span>
+      </div>
+      <div class="wifi-grid">
+        <div class="wifi-box">
+          <div class="wifi-label">Señal que recibe la cámara</div>
+          <div class="wifi-big" id="wifi-calidad">—</div>
+          <div class="wifi-bar"><span id="wifi-bar"></span></div>
+          <div class="wifi-sub" id="wifi-ssid">Red: —</div>
+        </div>
+        <div class="wifi-box">
+          <div class="wifi-label">Respuesta al panel</div>
+          <div class="wifi-big" id="wifi-ms">—</div>
+          <div class="wifi-sub" id="wifi-ms-sub">Promedio de 5 pedidos</div>
+        </div>
+        <div class="wifi-box">
+          <div class="wifi-label">Velocidad (foto de prueba)</div>
+          <div class="wifi-big" id="wifi-mbps">—</div>
+          <div class="wifi-sub" id="wifi-foto">—</div>
+        </div>
+      </div>
+      <div class="wifi-hist" id="wifi-hist"></div>
+      <details class="wifi-redes"><summary>Redes que ve la cámara</summary><div id="wifi-redes">—</div></details>
+      <p class="dom-hint">La señal la mide la propia cámara (0 a 100): <b>70 o más buena</b>, <b>40 a 69 regular</b>, <b>menos de 40 mala</b>. Para ubicar la cámara o la antena, dejá "Medir continuo" y movela de a poco (se puede mirar desde el celular). Escanear redes puede cortar el video de la cámara 1 o 2 segundos: no lo dejes continuo en el aire.</p>
+    </section>
+    <section class="card wide">
       <h2>Posiciones guardadas</h2>
       <div class="preset-fila"><span class="preset-label">Ir a</span><span class="preset-row" id="dom-ir"></span></div>
       <div class="preset-fila"><span class="preset-label">Guardar acá</span><span class="preset-row guardar" id="dom-guardar-p"></span></div>
@@ -340,6 +369,62 @@
     img.removeAttribute("src");
     viewMode = "fotos";
     snapLoop(token);
+  });
+
+  // ---------- Medidor de WiFi ----------
+  let wifiBusy = false;
+  let wifiTimer = null;
+  const historial = [];
+  const nivel = q => q === null || q === undefined ? "" : q >= 70 ? "buena" : q >= 40 ? "regular" : "mala";
+  const nivelMs = ms => ms === null ? "mala" : ms < 80 ? "buena" : ms < 250 ? "regular" : "mala";
+  function wifiMsg(text, isError = false) { const el = $("#wifi-msg"); el.textContent = text; el.classList.toggle("error", isError); }
+  async function medirWifi() {
+    if (wifiBusy) return;
+    if (!camara()) return wifiMsg("Primero agregá una cámara", true);
+    wifiBusy = true;
+    $("#wifi-medir").disabled = true;
+    const nombre = camara().nombre;
+    $("#wifi-cam").textContent = `· ${nombre}`;
+    wifiMsg("Midiendo… (unos 6 segundos)");
+    const [wifi, red] = await Promise.allSettled([post("/api/domo/wifi", { idx: state.sel }), post("/api/domo/red", { idx: state.sel })]);
+    const errores = [];
+    let q = null;
+    if (wifi.status === "fulfilled") {
+      const w = wifi.value;
+      q = w.calidad;
+      $("#wifi-calidad").textContent = q === null ? (w.usaWifi ? "?" : "Cable") : `${q}`;
+      $("#wifi-calidad").className = `wifi-big ${nivel(q)}`;
+      $("#wifi-bar").style.width = `${q ?? 0}%`;
+      $("#wifi-bar").className = nivel(q);
+      $("#wifi-ssid").textContent = !w.usaWifi ? "La cámara está por cable (no usa WiFi)"
+        : q === null ? `Red: ${w.ssid || "—"} (no apareció en el escaneo)` : `Red: ${w.ssid} · ${nivel(q)}`;
+      $("#wifi-redes").innerHTML = w.redes.length
+        ? w.redes.map(r => `<div class="wifi-red ${r.ssid === w.ssid ? "propia" : ""}"><span>${html(r.ssid || "(oculta)")}</span><b class="${nivel(r.calidad)}">${r.calidad}</b></div>`).join("")
+        : "No vio ninguna red";
+    } else errores.push(`WiFi: ${wifi.reason.message}`);
+    let ms = null;
+    if (red.status === "fulfilled") {
+      const r = red.value;
+      ms = r.respuestaMs;
+      $("#wifi-ms").textContent = ms === null ? "Sin respuesta" : `${ms} ms`;
+      $("#wifi-ms").className = `wifi-big ${nivelMs(ms)}`;
+      $("#wifi-ms-sub").textContent = ms === null ? "No respondió" : `Máximo ${r.respuestaMax} ms · ${r.errores ? `${r.errores} de ${r.pedidos} fallaron` : "sin cortes"}`;
+      $("#wifi-mbps").textContent = r.foto ? `${r.foto.mbps} Mbps` : "—";
+      $("#wifi-mbps").className = `wifi-big ${r.foto ? (r.foto.mbps >= 4 ? "buena" : r.foto.mbps >= 1.5 ? "regular" : "mala") : "mala"}`;
+      $("#wifi-foto").textContent = r.foto ? `Aprox.: foto de ${r.foto.kb} KB en ${r.foto.ms} ms` : "No llegó la foto";
+    } else errores.push(`Red: ${red.reason.message}`);
+    const hora = new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" });
+    historial.unshift({ hora, nombre, q, ms });
+    historial.length = Math.min(historial.length, 12);
+    $("#wifi-hist").innerHTML = historial.map(h => `<span class="wifi-chip ${nivel(h.q) || nivelMs(h.ms)}" title="${html(h.nombre)}">${h.hora} · ${h.q ?? "?"} · ${h.ms ?? "—"} ms</span>`).join("");
+    wifiMsg(errores.length ? errores.join(" · ") : `Medido ${hora}`, errores.length > 0);
+    $("#wifi-medir").disabled = false;
+    wifiBusy = false;
+  }
+  $("#wifi-medir").addEventListener("click", medirWifi);
+  $("#wifi-continuo").addEventListener("change", event => {
+    clearInterval(wifiTimer); wifiTimer = null;
+    if (event.target.checked) { medirWifi(); wifiTimer = setInterval(medirWifi, 15000); }
   });
 
   load();

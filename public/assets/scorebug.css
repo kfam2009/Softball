@@ -2424,3 +2424,25 @@ textarea {
 .preset-row.guardar button { background: #4b535c; }
 .preset-row.guardar button:hover { background: var(--gold); color: #10151b; }
 @media (max-width: 900px) { .dom-grid { grid-template-columns: 1fr; } }
+
+/* Medidor de WiFi */
+.dom-sub { font-size: 14px; color: #4b535c; font-weight: 700; }
+.dom-check { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.dom-check input { width: auto; }
+.wifi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 10px 0; }
+.wifi-box { background: #1f2830; color: #fff; border-radius: 10px; padding: 12px 14px; }
+.wifi-label { font-size: 12px; font-weight: 800; text-transform: uppercase; color: #9fb0bd; }
+.wifi-big { font-size: 40px; font-weight: 900; line-height: 1.15; margin: 4px 0; }
+.wifi-sub { font-size: 13px; color: #c9d1d9; }
+.wifi-bar { height: 10px; border-radius: 6px; background: #39434d; overflow: hidden; margin: 4px 0 6px; }
+.wifi-bar span { display: block; height: 100%; width: 0; background: #888; transition: width .4s; }
+.buena { color: #3ddc84; } .regular { color: var(--gold); } .mala { color: #ff6b6b; }
+.wifi-bar span.buena { background: #3ddc84; } .wifi-bar span.regular { background: var(--gold); } .wifi-bar span.mala { background: #ff6b6b; }
+.wifi-hist { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.wifi-chip { font-size: 12px; font-weight: 800; padding: 3px 8px; border-radius: 12px; background: #1f2830; }
+.wifi-redes { margin: 8px 0; }
+.wifi-redes summary { cursor: pointer; font-weight: 800; }
+.wifi-red { display: flex; justify-content: space-between; max-width: 420px; padding: 3px 8px; border-bottom: 1px solid rgba(0,0,0,.08); }
+.wifi-red.propia { font-weight: 900; background: rgba(0,167,142,.12); }
+.wifi-red b.buena { color: #1b8a3d; } .wifi-red b.regular { color: #a87900; } .wifi-red b.mala { color: #c62828; }
+@media (max-width: 900px) { .wifi-grid { grid-template-columns: 1fr; } }
