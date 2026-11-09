@@ -2446,3 +2446,8 @@ textarea {
 .wifi-red.propia { font-weight: 900; background: rgba(0,167,142,.12); }
 .wifi-red b.buena { color: #1b8a3d; } .wifi-red b.regular { color: #a87900; } .wifi-red b.mala { color: #c62828; }
 @media (max-width: 900px) { .wifi-grid { grid-template-columns: 1fr; } }
+
+.dom-encontradas { margin: 8px 0; padding: 10px 12px; border-radius: 10px; background: rgba(0,167,142,.10); font-weight: 600; }
+.dom-hallada { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,.08); }
+.dom-hallada:last-child { border-bottom: 0; }
+.dom-hallada em { color: #4b535c; font-size: 13px; }

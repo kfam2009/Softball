@@ -4,7 +4,7 @@
   if (!root) return;
   const $ = sel => root.querySelector(sel);
   const html = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]));
-  const MARCA_LABEL = { foscam: "Foscam", longse: "Longse (ONVIF)" };
+  const MARCA_LABEL = { foscam: "Foscam", longse: "Longse (ONVIF)", onvif: "Otra (ONVIF)" };
   let state = { lista: [], sel: 0, paso: 400, marcas: ["foscam", "longse"] };
   let msgTimer = null;
 
@@ -15,7 +15,9 @@
         <label class="dom-grow">Cámara <select id="dom-sel"></select></label>
         <button type="button" class="btn secondary" id="dom-add">+ Cámara</button>
         <button type="button" class="btn danger" id="dom-del">Eliminar</button>
+        <button type="button" class="btn secondary" id="dom-buscar">Buscar cámaras en la red</button>
       </div>
+      <div class="dom-encontradas" id="dom-encontradas" hidden></div>
       <div class="form-grid dom-form">
         <label>Nombre <input id="dom-nombre" autocomplete="off"></label>
         <label>Marca <select id="dom-marca"></select></label>
@@ -132,9 +134,10 @@
 
   function marcaHint() {
     const marca = $("#dom-marca").value;
-    $("#dom-hint").innerHTML = marca === "longse"
-      ? `<b>Longse (ONVIF): se activa cuando conectes la cámara.</b> Los comandos son distintos; los implementamos y probamos con la cámara conectada.`
-      : `Foscam: puerto por defecto 88. El panel le manda los comandos a la IP de la cámara (red local o ZeroTier).`;
+    $("#dom-hint").innerHTML = marca === "foscam"
+      ? `Foscam: puerto por defecto 88. El panel le manda los comandos a la IP de la cámara (red local o ZeroTier).`
+      : `ONVIF: el puerto es el del servicio ONVIF (suele ser 80, 8000 u 8899). Si no lo sabés, usá <b>Buscar cámaras en la red</b>. El usuario y la clave son los de la cámara (los de su app o página web).`;
+    $("#dom-puerto").placeholder = marca === "foscam" ? "88" : "80";
   }
 
   async function load() {
@@ -157,7 +160,7 @@
       nombre: $("#dom-nombre").value.trim(),
       marca: $("#dom-marca").value,
       host: $("#dom-host").value.trim(),
-      puerto: Number($("#dom-puerto").value) || 88,
+      puerto: Number($("#dom-puerto").value) || ($("#dom-marca").value === "foscam" ? 88 : 80),
       usuario: $("#dom-usuario").value.trim() || "admin",
       clave: $("#dom-clave").value,
       vmixInput: $("#dom-vmix").value.trim()
@@ -176,6 +179,40 @@
     } catch (error) { msg(error.message, true); }
   });
   $("#dom-marca").addEventListener("change", marcaHint);
+  // Buscar camaras ONVIF en la red local
+  $("#dom-buscar").addEventListener("click", async () => {
+    const box = $("#dom-encontradas");
+    box.hidden = false;
+    box.innerHTML = "Buscando cámaras ONVIF en la red y probando puertos de la IP cargada… (4 segundos)";
+    $("#dom-buscar").disabled = true;
+    try {
+      const ip = $("#dom-host").value.trim();
+      const payload = await fetch(`/api/domos/buscar${ip ? `?host=${encodeURIComponent(ip)}` : ""}`, { cache: "no-store" }).then(r => r.json());
+      if (!payload.ok) throw new Error(payload.error || "No se pudo buscar");
+      const enLista = new Set(state.lista.map(c => `${c.host}:${c.puerto}`));
+      box.innerHTML = payload.lista.length
+        ? payload.lista.map((c, i) => `<div class="dom-hallada"><span><b>${html(c.nombre || c.modelo || (c.desde === "puertos" ? "ONVIF encontrado" : "Cámara ONVIF"))}</b> · ${html(c.host)}:${c.puerto}${c.modelo ? ` · ${html(c.modelo)}` : ""}</span>${enLista.has(`${c.host}:${c.puerto}`) ? `<em>ya está en la lista</em>` : `<button type="button" class="btn secondary" data-usar="${i}">${state.lista.some(x => x.host === c.host) ? "Usar este puerto" : "Agregar"}</button>`}</div>`).join("")
+        : "No apareció ninguna cámara ONVIF. Revisá que esté en la misma red que esta PC (por ZeroTier la búsqueda no funciona: cargá la IP a mano).";
+      box.querySelectorAll("[data-usar]").forEach(button => button.addEventListener("click", () => {
+        const c = payload.lista[Number(button.dataset.usar)];
+        const marca = /longse/i.test(`${c.nombre} ${c.modelo}`) ? "longse" : "onvif";
+        const lista = state.lista.slice();
+        const idx = lista.findIndex(x => x.host === c.host);
+        if (idx >= 0) {
+          // Ya estaba esa IP (por ejemplo con el puerto de video 554): se corrige el puerto ONVIF.
+          lista[idx] = { ...lista[idx], marca: lista[idx].marca === "foscam" ? marca : lista[idx].marca, puerto: c.puerto, ruta: c.ruta };
+        } else {
+          lista.push({ nombre: c.nombre || `Domo ${lista.length + 1}`, marca: marca === "onvif" && /foscam/i.test(`${c.nombre} ${c.modelo}`) ? "foscam" : marca, host: c.host, puerto: c.puerto, ruta: c.ruta, usuario: "admin", clave: "" });
+        }
+        const sel = idx >= 0 ? idx : lista.length - 1;
+        saveAll(lista, sel, idx >= 0 ? `Puerto ONVIF ${c.puerto} guardado: Probar` : "Cámara agregada: poné usuario y clave, Guardar y Probar").then(() => { box.hidden = true; $("#dom-clave").focus(); }).catch(error => msg(error.message, true));
+      }));
+    } catch (error) {
+      box.innerHTML = html(error.message);
+    } finally {
+      $("#dom-buscar").disabled = false;
+    }
+  });
   $("#dom-add").addEventListener("click", () => {
     const lista = state.lista.slice();
     lista.push({ nombre: `Domo ${lista.length + 1}`, marca: "foscam", host: "", puerto: 88, usuario: "admin", clave: "" });

@@ -469,7 +469,7 @@ function saveDomos(body) {
     let clave = String(c.clave ?? "").slice(0, 100);
     if (clave === "" || clave === CLAVE_OCULTA) clave = prevById.get(id)?.clave || "";
     const marca = domos.MARCAS.includes(String(c.marca).toLowerCase()) ? String(c.marca).toLowerCase() : "foscam";
-    return { id, nombre: txt(c.nombre, 40) || "Domo", marca, host: txt(c.host, 60).replace(/^https?:\/\//, "").replace(/\/.*$/, ""), puerto: num(c.puerto, 1, 65535, 88), usuario: txt(c.usuario, 40) || "admin", clave, vmixInput: txt(c.vmixInput, 10) };
+    return { id, nombre: txt(c.nombre, 40) || "Domo", marca, host: txt(c.host, 60).replace(/^https?:\/\//, "").replace(/\/.*$/, ""), puerto: num(c.puerto, 1, 65535, marca === "foscam" ? 88 : 80), usuario: txt(c.usuario, 40) || "admin", clave, vmixInput: txt(c.vmixInput, 10), ruta: txt(c.ruta, 120) };
   });
   const next = {
     lista,
@@ -499,7 +499,7 @@ async function domoAccion(accion, body) {
   const dv = domos.crearDomo(cam);
   if (accion === "probar") return dv.probar();
   if (accion === "wifi") {
-    if (!dv.wifi) throw new Error("Esta marca todavía no informa la señal WiFi");
+    if (!dv.wifi) throw new Error("Esta cámara no informa la señal WiFi (eso solo lo da Foscam); la respuesta y la velocidad sí se miden");
     return dv.wifi();
   }
   if (accion === "red") return domos.medirRed(dv, () => dv.probar());
@@ -1032,6 +1032,18 @@ function createServer() {
       return openReplayPanel(res);
     }
 
+    if (req.method === "GET" && url.pathname === "/api/domos/buscar") {
+      const hosts = [...new Set([url.searchParams.get("host"), ...readDomos().lista.filter(c => c.marca !== "foscam").map(c => c.host)].filter(h => h && /^[\w.-]+$/.test(h)))];
+      Promise.all([domos.buscarOnvif(), ...hosts.map(h => domos.detectarOnvif(h))])
+        .then(([red, ...porHost]) => {
+          const lista = [...red];
+          for (const c of porHost.flat()) if (!lista.some(x => x.host === c.host && x.puerto === c.puerto)) lista.push(c);
+          sendJson(res, { ok: true, lista });
+        })
+        .catch(error => sendJson(res, { ok: false, error: error.message }, 500));
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/domos") {
       return sendJson(res, { ok: true, domos: publicDomos() });
     }
@@ -1065,8 +1077,8 @@ function createServer() {
       (async () => {
         const { cam } = domoActual(url.searchParams.get("idx"));
         const dv = domos.crearDomo(cam);
-        const shot = await domos.httpGet(dv.snapshotUrl(), 6000);
-        const type = String(shot.headers["content-type"] || "");
+        const shot = await dv.snapshot();
+        const type = shot.type;
         if (shot.status !== 200 || !type.startsWith("image/")) throw new Error("La cámara no devolvió imagen (revisá usuario y clave)");
         res.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
         res.end(shot.body);
