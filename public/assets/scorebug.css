@@ -2618,3 +2618,11 @@ textarea {
 .ad-order button:hover:not(:disabled) { background: #00a78e; }
 .ad-order button:disabled { opacity: .3; cursor: default; }
 .ad-order span { cursor: grab; color: #4b535c; font-size: 18px; padding: 0 4px; }
+
+/* Barra de pestanas en una sola linea */
+.tabs { flex-wrap: nowrap; gap: 6px; }
+.tab-btn { flex: 1 1 auto; min-width: 0; padding: 9px 8px; font-size: 14px; white-space: nowrap; }
+@media (max-width: 1280px) {
+  .tabs { flex-wrap: wrap; }
+  .tab-btn { flex: 0 0 auto; }
+}

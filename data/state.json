@@ -203,10 +203,21 @@
           "src": "ads/Zocalos/Zocalo_Ravens_1920x1080.png"
         }
       ]
-    }
+    },
+    "order": {}
   },
   "excel": {
     "home": [],
     "away": []
+  },
+  "sponsorBug": {
+    "visible": true,
+    "logo": "logos/South_logo_amarillo.png"
+  },
+  "homerun": {
+    "visible": false,
+    "player": "",
+    "seconds": 8,
+    "startedAt": 0
   }
 }
