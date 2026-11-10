@@ -114,6 +114,19 @@
           <button class="btn danger" data-overlay-out="scorebug">Out</button>
         </div>
       </section>
+      <section class="card wide">
+        <h2>Home Run</h2>
+        <div class="form-grid">
+          <label>Bateador (opcional) <input data-path="homerun.player" placeholder="Ej. M. Gómez"></label>
+          <label>Sale solo a los (segundos, 0 = queda) <input data-path="homerun.seconds" type="number" min="0" max="60"></label>
+        </div>
+        <div class="vmix-actions" style="margin-top:12px">
+          <button class="btn" data-action="homerun-in">Home Run In</button>
+          <button class="btn danger" data-action="homerun-out">Out</button>
+          <button class="btn secondary monitor-btn" type="button" data-monitor="homerun">Monitor</button>
+        </div>
+        <p class="dom-hint">Sale abajo a la izquierda, a la altura del scorebug, con el logo y el color del equipo que batea. También desde el MIDI ("Home Run In/Out").</p>
+      </section>
     </section>
 
     <section class="tab-panel" data-panel="scoreboard">
@@ -580,7 +593,7 @@
     </div>
   </main>
   <script src="assets/control.js?v=20261105-softball"></script>
-  <script src="assets/midi.js?v=20261109-midi"></script>
+  <script src="assets/midi.js?v=20261110-midi"></script>
   <script src="assets/domos.js?v=20261109-domos5"></script>
 </body>
 </html>

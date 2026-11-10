@@ -113,6 +113,7 @@
       ["count-reset", "Conteo 0-0", "S 8"], ["undo", "Deshacer", "M 8"]
     ].map(([id, label, hint]) => ({ id, group: "Juego", label, hint, run: () => panelAction(id, label) })),
     { id: "scorebug-toggle", group: "Gráficos", label: "Scorebug In/Out", hint: "● Rec", run: () => toggle("scorebug", liveState?.ndi?.scorebugVisible) },
+    { id: "homerun-toggle", group: "Gráficos", label: "Home Run In/Out", hint: "", run: () => panelAction("homerun-toggle", "Home Run") },
     { id: "zocalo-toggle", group: "Gráficos", label: "Zócalo In/Out", hint: "◀◀", run: () => toggle("zocalo", liveState?.ads?.zocalo?.visible) },
     { id: "ad-toggle", group: "Gráficos", label: "Publicidad In/Out", hint: "▶▶", run: () => toggle("ad", liveState?.ads?.full?.visible) },
     { id: "zocalo-next", group: "Gráficos", label: "Zócalo siguiente", hint: "Track ◀", run: () => panelAction("zocalo-next", "Zócalo siguiente") },

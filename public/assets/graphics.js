@@ -135,6 +135,28 @@ function renderScorebug(state) {
   `;
 }
 
+// Zocalo HOME RUN del equipo que batea.
+function renderHomerun(state) {
+  const match = state.match;
+  const team = match.teams[match.half === "BOTTOM" ? "home" : "away"];
+  const hr = state.homerun || {};
+  const sub = hr.player ? `${esc(hr.player)} · ${esc(team.name)}` : esc(team.name);
+  const mark = team.logo
+    ? `<img src="${esc(assetSrc(team.logo))}" alt="">`
+    : `<b>${esc(team.short || "")}</b>`;
+  const letters = (word, start) => [...word].map((c, i) => `<span style="--i:${start + i}">${c}</span>`).join("");
+  return `
+    <section class="hr-bug" style="--hr-team:${esc(team.color || "#00a78e")}">
+      <div class="hr-team">${mark}</div>
+      <div class="hr-main">
+        <div class="hr-title"><span class="hr-word">${letters("HOME", 0)}</span><span class="hr-word">${letters("RUN", 4)}</span><i class="hr-shine"></i></div>
+        <div class="hr-sub">${sub}</div>
+      </div>
+      <div class="hr-ball"><i></i></div>
+      <div class="hr-sparks">${Array.from({ length: 10 }, (_, i) => `<i style="--k:${i}"></i>`).join("")}</div>
+    </section>`;
+}
+
 function innings(match) {
   const awayLine = match.teams.away.line || [];
   const homeLine = match.teams.home.line || [];
@@ -621,20 +643,29 @@ function render(state, force = false) {
   const fullAd = isPreview ? null : adLayer(state, "full");
   const hideScorebug = Boolean(zocalo) && state.ads?.zocalo?.hideScorebug !== false;
 
-  if (!isPreview && !hasVisibleLayer && !zocalo && !fullAd) {
+  if (previewGraphic === "homerun") {
+    renderLayerSet([{ key: "homerun", html: renderHomerun(state) }]);
+    return;
+  }
+
+  if (!isPreview && !hasVisibleLayer && !zocalo && !fullAd && !state.homerun?.visible) {
     clearAllLayers(true);
     return;
   }
 
   const layers = [];
   if (!hasVisibleLayer && !isPreview) {
-    // solo publicidades
+    // solo publicidades / home run
+    if (state.homerun?.visible) layers.push({ key: "homerun", html: renderHomerun(state) });
   } else if (layeredMode) {
     if (scorebugVisible && !hideScorebug) {
       layers.push({ key: "scorebug", html: renderScorebug(state) });
     }
     if (playerVisible) {
       layers.push({ key: "player", html: renderPlayer(state) });
+    }
+    if (state.homerun?.visible) {
+      layers.push({ key: "homerun", html: renderHomerun(state) });
     }
   } else {
     layers.push({ key: activeGraphic, html: (renderers[activeGraphic] || renderScorebug)(state) });

@@ -31,6 +31,9 @@ El scoreboard muestra las **entradas reglamentarias** (7 por defecto; 5 para inf
 ## Sponsor al lado del scorebug
 En la pestaña **Scorebug**: "Sponsor al lado del scorebug" (prender/apagar) y "Logo del sponsor" (cualquier imagen de la carpeta **Logos**). Sale a la izquierda del scorebug, misma altura y alineado; entra y sale junto con el scorebug. Por defecto usa `South_logo_amarillo.png` si está en Logos.
 
+## Home Run
+En la pestaña **Scorebug**, tarjeta **Home Run**: botón **Home Run In / Out** (y **Monitor**). Sale abajo a la izquierda, en la misma franja que el scorebug, con el logo y el color del **equipo que batea**, "HOME RUN" en dorado con animación (letras, brillo y una pelota que entra rodando) y abajo el bateador (opcional) y el equipo. Sale solo a los segundos configurados (0 = queda hasta Out). En el MIDI: acción **"Home Run In/Out"** (grupo Gráficos).
+
 ## Excel
 `Datos.xlsx` en la carpeta que contiene `softball-ndi` (o la ruta de la variable `SB_EXCEL`). Hojas **HOME**, **AWAY**, **UMPIRES** y opcional **EQUIPOS**, columnas A/B/C: número, nombre, posición (o rol). Ver `Datos-ejemplo.xlsx`. Después de guardar, **Sync Excel** en el panel.
 

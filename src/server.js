@@ -92,6 +92,12 @@ function normalizeState(state) {
     state.sponsorBug = { visible: Boolean(logo), logo };
   }
   state.sponsorBug.visible = Boolean(state.sponsorBug.visible);
+  // Zocalo HOME RUN (sale solo despues de "seconds"; 0 = queda hasta Out).
+  if (!state.homerun || typeof state.homerun !== "object") state.homerun = {};
+  state.homerun.visible = Boolean(state.homerun.visible);
+  state.homerun.player = String(state.homerun.player || "").slice(0, 40);
+  state.homerun.seconds = Math.max(0, Math.min(60, Number(state.homerun.seconds ?? 8) || 0));
+  state.homerun.startedAt = Number(state.homerun.startedAt || 0);
   state.sponsorBug.logo = String(state.sponsorBug.logo || "");
   state.match ||= {};
   const match = state.match;
@@ -376,10 +382,15 @@ setInterval(() => {
   try {
     if (!fs.existsSync(statePath)) return;
     const state = readState();
-    if (!state.ads) return;
     let changed = false;
+    const hr = state.homerun;
+    if (hr?.visible && Number(hr.seconds) > 0 && Date.now() - Number(hr.startedAt || 0) >= Number(hr.seconds) * 1000) {
+      hr.visible = false;
+      changed = true;
+    }
+    if (!state.ads && !changed) return;
     for (const kind of ["full", "zocalo"]) {
-      const item = state.ads[kind];
+      const item = state.ads?.[kind];
       const total = adCount(state, kind);
       if (item?.visible && item.mode === "once" && total && Date.now() - item.startedAt >= total * item.seconds * 1000) {
         item.visible = false;
@@ -980,6 +991,16 @@ function applyScorebugAction(state, action) {
   state = normalizeState(state);
   if (applyGameAction(state, action)) return state;
   if (applyAdAction(state, action)) return state;
+
+  if (action === "homerun-in" || (action === "homerun-toggle" && !state.homerun.visible)) {
+    state.homerun.visible = true;
+    state.homerun.startedAt = Date.now();
+    return state;
+  }
+  if (action === "homerun-out" || action === "homerun-toggle") {
+    state.homerun.visible = false;
+    return state;
+  }
 
   if (action === "scorebug-in") {
     state.ndi.activeGraphic = "scorebug";
