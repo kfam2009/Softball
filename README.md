@@ -64,6 +64,7 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 ## Publicidades y zócalos
 - Carpeta **Publicidades** (se busca sola al lado del Excel o dentro de una subcarpeta, ej. `Copa Beto Pelizario\Publicidades`; se puede fijar otra con "Cambiar carpeta"). Imágenes 1920x1080 a pantalla completa; dentro, subcarpeta **Zocalos** con PNG transparentes 1920x1080. Sin audio. Al agregar o sacar imágenes: **Recargar**.
 - Pestaña **Publicidades**: In / Out / Anterior / Siguiente, segundos por imagen y modo (**Rotar en loop**, **Una vuelta y sale sola**, **Fija**). Clic en una miniatura para elegir desde cuál arranca (o cambiarla al aire).
+- **Orden**: con las flechas ◀ ▶ debajo de cada miniatura o arrastrándolas se cambia el orden de rotación (por ejemplo, para que dos publicidades del mismo sponsor no salgan seguidas). El orden queda guardado; las imágenes nuevas van al final.
 - Los zócalos se superponen al juego; por defecto el scorebug se oculta mientras sale el zócalo y vuelve solo (configurable). La publicidad a pantalla completa queda por encima de todo.
 - También en el celular (Publicidad / Zócalo: In, Sig., Out) y en Stream Deck (`AD_IN`, `AD_NEXT`, `AD_OUT`, `ZOCALO_IN`, `ZOCALO_NEXT`, `ZOCALO_OUT`).
 
