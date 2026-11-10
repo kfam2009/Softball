@@ -738,10 +738,12 @@ function handleStatePost(req, res) {
   req.on("data", chunk => raw += chunk);
   req.on("end", () => {
     try {
-      const state = JSON.parse(raw || "{}");
+      const incoming = JSON.parse(raw || "{}");
+      const before = JSON.stringify(incoming.excel?.syncedTeams || {});
+      const state = incoming.excel?.byTeam ? syncTeamRosters(normalizeState(incoming)) : incoming;
       writeState(state);
       broadcast(state);
-      sendJson(res, { ok: true, state });
+      sendJson(res, { ok: true, state, rostersChanged: before !== JSON.stringify(state.excel?.syncedTeams || {}) });
     } catch (error) {
       sendJson(res, { ok: false, error: error.message }, 400);
     }
@@ -830,6 +832,27 @@ function readExcelData() {
   });
 }
 
+// Si el Excel tiene una hoja por equipo, HOME/AWAY toman el plantel del equipo elegido en Teams & Score.
+function rosterTextOf(rows) {
+  return rows.map(row => `${row.number}  ${row.name}  ${row.role}`.trim()).join("\n");
+}
+function syncTeamRosters(state) {
+  const byTeam = state.excel?.byTeam;
+  if (!byTeam || typeof byTeam !== "object") return state;
+  state.excel.syncedTeams ||= {};
+  for (const side of ["home", "away"]) {
+    const key = normName(state.match?.teams?.[side]?.name);
+    const rows = byTeam[key];
+    if (!rows?.length || state.excel.syncedTeams[side] === key) continue;
+    const previous = state.excel.syncedTeams[side];
+    state.excel[side] = rows;
+    state.rosters[side].playersText = rosterTextOf(rows);
+    if (previous && previous !== key && state.lineups?.[side]) state.lineups[side].text = "";   // otro equipo: line up vacio
+    state.excel.syncedTeams[side] = key;
+  }
+  return state;
+}
+
 function applyExcelToState(state, excel) {
   state = normalizeState(state);
   state.rosters.home.playersText = excel.homeText;
@@ -847,8 +870,11 @@ function applyExcelToState(state, excel) {
     fixture: excel.fixture || [],
     diamonds: excel.diamonds || [],
     lineupHome: excel.lineupHome || [],
-    lineupAway: excel.lineupAway || []
+    lineupAway: excel.lineupAway || [],
+    byTeam: excel.teamRosters || {},
+    syncedTeams: {}
   };
+  syncTeamRosters(state);
 
   const side = state.player.teamSide === "away" ? "away" : "home";
   const currentPlayerStillExists = excel[side]?.some(row => (

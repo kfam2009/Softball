@@ -51,6 +51,9 @@ El Excel `Datos.xlsx` se busca primero en la carpeta de arriba y si no, dentro d
 - `ARRANCAR SOFTBALL.cmd` (o `scripts\START_NDI_SCOREBUG.cmd`). Panel en `http://localhost:8136/control.html`.
 - Para cerrar: `PARAR SOFTBALL.cmd` o `scripts\STOP_NDI_SCOREBUG.cmd`.
 
+## Rosters por equipo
+Además de HOME y AWAY, el Excel puede tener **una hoja por equipo** con el **mismo nombre que en la hoja EQUIPOS** (ej. `LINIERS`, `CEF1 ROJO`), columnas A número, B apellido y nombre, C posición o rol (Manager, Coach, Jefe de Equipo, Auxiliar). Después de **Sync Excel**, al elegir los equipos en Teams & Score (o el "equipo (Excel)"), los rosters, el Line up y el Player toman solos el plantel de cada equipo. Si un equipo no tiene hoja, se usa HOME/AWAY.
+
 ## Logos y equipos
 - **Carpeta `Logos`** al lado del `Datos.xlsx` (se crea sola). Cualquier imagen PNG/JPG/WEBP/SVG/GIF que se copie ahí aparece en los selectores de logo del panel.
 - **Subir logo**: botón debajo de cada selector de logo; guarda la imagen en la carpeta `Logos` y la asigna al equipo.

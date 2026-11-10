@@ -28,7 +28,8 @@ def repair_text(value):
     return value
 
 
-HEADER_WORDS = {"#", "nro", "numero", "número", "number", "nombre", "name", "pos", "posicion", "posición", "position", "rol", "role"}
+HEADER_WORDS = {"#", "n", "n°", "nº", "no", "nro", "numero", "número", "number", "camiseta", "nombre", "name", "jugador", "jugadores",
+                "apellido y nombre", "apellido, nombre", "nombre y apellido", "pos", "posicion", "posición", "position", "rol", "role"}
 
 
 def read_sheet(workbook, name):
@@ -184,6 +185,31 @@ def read_diamonds(workbook):
     return names
 
 
+RESERVED_SHEETS = {"home", "away", "umpires", "equipos", "teams", "fixture", "fixtures", "calendario",
+                   "diamantes", "diamante", "canchas", "lineup_home", "lineup home", "lineup-home",
+                   "lineup_away", "lineup away", "lineup-away"}
+
+
+def norm(text):
+    import unicodedata
+    text = unicodedata.normalize("NFD", str(text or ""))
+    return "".join(c for c in text if unicodedata.category(c) != "Mn").strip().lower()
+
+
+def read_team_rosters(workbook, teams):
+    # Una hoja por equipo, con el mismo nombre que en la hoja EQUIPOS (A numero, B nombre, C posicion/rol).
+    names = {norm(team["name"]): team["name"] for team in teams}
+    rosters = {}
+    for sheet_name in workbook.sheetnames:
+        key = norm(sheet_name)
+        if key in RESERVED_SHEETS or key not in names:
+            continue
+        rows = read_sheet(workbook, sheet_name)
+        if rows:
+            rosters[key] = rows
+    return rosters
+
+
 def lineup_text(rows):
     return "\n".join(f"{r['order']} | {r['number']} | {r['name']} | {r['pos']}" for r in rows)
 
@@ -204,6 +230,7 @@ def main():
     for game in fixture:
         if game["diamond"] and game["diamond"] not in diamonds:
             diamonds.append(game["diamond"])
+    team_rosters = read_team_rosters(workbook, teams)
     lineup_home = read_lineup(workbook, ["LINEUP_HOME", "LINEUP HOME", "LINEUP-HOME"])
     lineup_away = read_lineup(workbook, ["LINEUP_AWAY", "LINEUP AWAY", "LINEUP-AWAY"])
     data = {
@@ -215,6 +242,7 @@ def main():
         "awayText": roster_text(away),
         "umpiresText": roster_text(umpires),
         "teams": teams,
+        "teamRosters": team_rosters,
         "fixture": fixture,
         "diamonds": diamonds,
         "lineupHome": lineup_home,
