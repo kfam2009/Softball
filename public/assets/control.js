@@ -522,14 +522,57 @@ function renderAds(force = false) {
     const current = adCurrentIndex(kind);
     const prefix = kind === "full" ? "ad" : "zocalo";
     grid.innerHTML = list.length ? list.map((ad, index) => `
-      <button type="button" class="ad-thumb ${index === current ? (item.visible ? "on-air" : "current") : ""}" data-ad-select="${prefix}-select-${index}" title="${escAttr(ad.file)}">
-        <img src="${escAttr(ad.src)}" alt="" loading="lazy"><span>${escAttr(ad.label)}</span>
-      </button>`).join("") : `<p class="hint">No hay imágenes${kind === "zocalo" ? " en la subcarpeta Zocalos" : " en la carpeta"}.</p>`;
+      <div class="ad-item" draggable="true" data-ad-index="${index}">
+        <button type="button" class="ad-thumb ${index === current ? (item.visible ? "on-air" : "current") : ""}" data-ad-select="${prefix}-select-${index}" title="${escAttr(ad.file)}">
+          <img src="${escAttr(ad.src)}" alt="" loading="lazy" draggable="false"><span>${index + 1}. ${escAttr(ad.label)}</span>
+        </button>
+        <div class="ad-order">
+          <button type="button" data-ad-move="-1" title="Mover antes" ${index === 0 ? "disabled" : ""}>◀</button>
+          <span title="Arrastrar para cambiar el orden">⠿</span>
+          <button type="button" data-ad-move="1" title="Mover después" ${index === list.length - 1 ? "disabled" : ""}>▶</button>
+        </div>
+      </div>`).join("") : `<p class="hint">No hay imágenes${kind === "zocalo" ? " en la subcarpeta Zocalos" : " en la carpeta"}.</p>`;
     grid.querySelectorAll("[data-ad-select]").forEach(button => button.addEventListener("click", () => adAction(button.dataset.adSelect)));
+    const listKey = kind === "full" ? "full" : "zocalos";
+    const files = list.map(ad => ad.file);
+    const move = (from, to) => {
+      if (to < 0 || to >= files.length || from === to) return;
+      const next = files.slice();
+      next.splice(to, 0, next.splice(from, 1)[0]);
+      saveAdsOrder(listKey, next);
+    };
+    grid.querySelectorAll(".ad-item").forEach(el => {
+      const index = Number(el.dataset.adIndex);
+      el.querySelectorAll("[data-ad-move]").forEach(b => b.addEventListener("click", () => move(index, index + Number(b.dataset.adMove))));
+      el.addEventListener("dragstart", event => { event.dataTransfer.setData("text/plain", `${listKey}:${index}`); el.classList.add("dragging"); });
+      el.addEventListener("dragend", () => el.classList.remove("dragging"));
+      el.addEventListener("dragover", event => { event.preventDefault(); el.classList.add("drop-target"); });
+      el.addEventListener("dragleave", () => el.classList.remove("drop-target"));
+      el.addEventListener("drop", event => {
+        event.preventDefault();
+        el.classList.remove("drop-target");
+        const [fromKey, from] = String(event.dataTransfer.getData("text/plain")).split(":");
+        if (fromKey === listKey) move(Number(from), index);
+      });
+    });
     if (status) {
       status.textContent = item.visible ? `● AL AIRE: ${list[current]?.label || ""}` : `(${list.length})`;
       status.classList.toggle("ad-on-air", Boolean(item.visible));
     }
+  }
+}
+
+async function saveAdsOrder(kind, files) {
+  try {
+    clearTimeout(saveTimer);
+    await save();
+    const response = await fetch("/api/ads/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, files }) });
+    const payload = await response.json();
+    if (!payload.ok) throw new Error(payload.error || "No se pudo guardar el orden");
+    applyRemoteState(payload.state, "Orden guardado");
+    renderAds(true);
+  } catch (error) {
+    setStatus(error.message, true);
   }
 }
 

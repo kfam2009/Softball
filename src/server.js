@@ -344,10 +344,39 @@ function currentAdIndex(state, kind, now = Date.now()) {
   return (((item.index + steps) % total) + total) % total;
 }
 
+// Orden elegido en el panel (por nombre de archivo). Las imagenes nuevas van al final.
+function orderedAds(list, order) {
+  const pos = new Map((Array.isArray(order) ? order : []).map((file, i) => [file, i]));
+  return list
+    .map((ad, i) => ({ ad, key: pos.has(ad.file) ? pos.get(ad.file) : 1e6 + i }))
+    .sort((a, b) => a.key - b.key)
+    .map(x => x.ad);
+}
+
 function refreshAdFiles(state) {
   const catalog = adsCatalog();
+  state.ads.order ||= {};
+  catalog.full = orderedAds(catalog.full, state.ads.order.full);
+  catalog.zocalos = orderedAds(catalog.zocalos, state.ads.order.zocalos);
   state.ads.files = { full: catalog.full, zocalos: catalog.zocalos };
   return catalog;
+}
+
+function setAdsOrder(state, listKey, files) {
+  adsDefaults(state);
+  refreshAdFiles(state);
+  const kind = listKey === "full" ? "full" : "zocalo";
+  const before = state.ads.files[listKey] || [];
+  const currentFile = before[currentAdIndex(state, kind)]?.file;
+  state.ads.order[listKey] = (Array.isArray(files) ? files : []).map(String).filter(f => before.some(ad => ad.file === f));
+  refreshAdFiles(state);
+  const after = state.ads.files[listKey];
+  const idx = after.findIndex(ad => ad.file === currentFile);
+  if (idx >= 0) {
+    state.ads[kind].index = idx;
+    if (state.ads[kind].visible) state.ads[kind].startedAt = Date.now();
+  }
+  return state;
 }
 
 function applyAdAction(state, action) {
@@ -1226,6 +1255,25 @@ function createServer() {
       writeState(state);
       broadcast(readState());
       return sendJson(res, { ok: true, ...catalog });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/ads/order") {
+      let raw = "";
+      req.on("data", chunk => raw += chunk);
+      req.on("end", () => {
+        try {
+          const body = JSON.parse(raw || "{}");
+          const listKey = body.kind === "full" ? "full" : "zocalos";
+          const state = setAdsOrder(readState(), listKey, body.files);
+          writeState(state);
+          const fresh = readState();
+          broadcast(fresh);
+          sendJson(res, { ok: true, state: fresh });
+        } catch (error) {
+          sendJson(res, { ok: false, error: error.message }, 400);
+        }
+      });
+      return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/ads-folder") {

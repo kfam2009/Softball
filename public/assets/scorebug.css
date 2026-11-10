@@ -2605,3 +2605,16 @@ textarea {
   0% { transform: rotate(var(--a)) translateX(0) scale(1); opacity: 1; }
   100% { transform: rotate(var(--a)) translateX(70px) scale(.2); opacity: 0; }
 }
+
+/* Reordenar publicidades */
+.ad-item { display: flex; flex-direction: column; gap: 4px; }
+.ad-item.dragging { opacity: .45; }
+.ad-item.drop-target .ad-thumb { outline: 3px dashed #00a78e; outline-offset: 2px; }
+.ad-order { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.ad-order button {
+  flex: 1; height: 26px; border: 0; border-radius: 6px; background: #4b535c; color: #fff;
+  font-weight: 900; cursor: pointer;
+}
+.ad-order button:hover:not(:disabled) { background: #00a78e; }
+.ad-order button:disabled { opacity: .3; cursor: default; }
+.ad-order span { cursor: grab; color: #4b535c; font-size: 18px; padding: 0 4px; }
