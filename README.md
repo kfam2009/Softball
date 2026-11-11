@@ -62,7 +62,7 @@ Además de HOME y AWAY, el Excel puede tener **una hoja por equipo** con el **mi
 
 ## Fixture y Upcoming
 - Hoja **FIXTURE** con encabezados **FECHA** (opcional), **HORA**, **LOCAL**, **VISITANTE**, **DIAMANTE** (en cualquier orden). Hoja **DIAMANTES** con la lista de diamantes (columna A).
-- Arriba del panel, en **Diamante**, elegir en qué diamante se está transmitiendo: el Upcoming se carga solo con los partidos de ese diamante (también con el botón **Cargar del fixture** en la pestaña Upcoming). Toma los partidos de hoy de ese diamante que siguen al partido actual (el de Teams & Score); si el partido actual no está en el fixture, usa la hora de la PC. Carga hasta 3 (según "Show games"); el resto se edita a mano.
+- Arriba del panel, en **Diamante**, elegir en qué diamante se está transmitiendo: el Upcoming se carga solo con los partidos de ese diamante (también con el botón **Cargar del fixture** en la pestaña Upcoming). Si el partido actual (el de Teams & Score) está en el fixture, toma los que siguen; si no, los próximos según la fecha y hora de la PC. Pueden ser de otro día: en ese caso, en lugar de "Próximo" muestra el día (ej. VIE 13/11). Carga hasta 3 (según "Show games"); el resto se edita a mano.
 
 ## Publicidades y zócalos
 - Carpeta **Publicidades** (se busca sola al lado del Excel o dentro de una subcarpeta, ej. `Copa Beto Pelizario\Publicidades`; se puede fijar otra con "Cambiar carpeta"). Imágenes 1920x1080 a pantalla completa; dentro, subcarpeta **Zocalos** con PNG transparentes 1920x1080. Sin audio. Al agregar o sacar imágenes: **Recargar**.

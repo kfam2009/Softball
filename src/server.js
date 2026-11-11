@@ -588,6 +588,13 @@ function localDate(now) {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+function dayLabel(isoDate) {
+  const [y, m, d] = String(isoDate).split("-").map(Number);
+  if (!y || !m || !d) return "";
+  const names = ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"];
+  return `${names[new Date(y, m - 1, d).getDay()]} ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`;
+}
+
 function minutesOf(time) {
   const match = /^(\d{1,2}):(\d{2})/.exec(String(time || ""));
   return match ? Number(match[1]) * 60 + Number(match[2]) : null;
@@ -606,30 +613,30 @@ function upcomingFromFixture(state, options = {}) {
   const today = localDate(now);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-  let games = fixture
-    .map((game, index) => ({ ...game, index, minutes: minutesOf(game.time) }))
+  // Partidos del diamante elegido, en orden de fecha y hora (sin fecha = se toman como de hoy).
+  const games = fixture
+    .map((game, index) => ({ ...game, index, minutes: minutesOf(game.time), day: game.date || today }))
     .filter(game => !diamond || normName(game.diamond) === normName(diamond))
-    .filter(game => !game.date || game.date === today)
-    .sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.minutes ?? 9999) - (b.minutes ?? 9999) || a.index - b.index);
+    .sort((a, b) => a.day.localeCompare(b.day) || (a.minutes ?? 9999) - (b.minutes ?? 9999) || a.index - b.index);
 
-  if (!games.length) throw new Error(diamond ? `No hay partidos de hoy en el diamante ${diamond}.` : "No hay partidos de hoy en el fixture.");
+  if (!games.length) throw new Error(diamond ? `No hay partidos en el diamante ${diamond}.` : "No hay partidos en el fixture.");
 
-  // 1) Si el partido actual (Teams & Score) esta en el fixture, se toman los que siguen.
+  // 1) Si el partido actual (Teams & Score) esta en el fixture, se toman los que siguen (el de hoy o el mas cercano).
   const home = normName(state.match.teams.home.name);
   const away = normName(state.match.teams.away.name);
-  const currentIndex = games.findIndex(game => {
-    const pair = [normName(game.home), normName(game.away)];
-    return pair.includes(home) && pair.includes(away);
-  });
+  const matches = games
+    .map((game, pos) => ({ game, pos }))
+    .filter(({ game }) => { const pair = [normName(game.home), normName(game.away)]; return pair.includes(home) && pair.includes(away); });
+  const current = matches.find(m => m.game.day === today) || matches.find(m => m.game.day > today) || matches[matches.length - 1];
   let next;
   let mode;
-  if (currentIndex >= 0) {
-    next = games.slice(currentIndex + 1);
+  if (current) {
+    next = games.slice(current.pos + 1);
     mode = "partido actual";
   } else {
-    // 2) Si no, los que todavia no empezaron segun la hora de la PC.
-    next = games.filter(game => game.minutes === null || game.minutes > nowMinutes);
-    mode = `hora de la PC (${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")})`;
+    // 2) Si no, los que todavia no empezaron segun la fecha y hora de la PC.
+    next = games.filter(game => game.day > today || (game.day === today && (game.minutes === null || game.minutes > nowMinutes)));
+    mode = `fecha y hora de la PC (${today.slice(8, 10)}/${today.slice(5, 7)} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")})`;
   }
   if (!next.length) throw new Error(`No quedan partidos después (${mode}${diamond ? `, diamante ${diamond}` : ""}).`);
 
@@ -648,7 +655,7 @@ function upcomingFromFixture(state, options = {}) {
       time: game.time,
       court: game.diamond || diamond,
       round: previous.round || "",
-      status: labels[i]
+      status: game.day === today ? labels[i] : dayLabel(game.day)
     };
   });
   state.upcoming.count = String(Math.max(1, chosen.length));
