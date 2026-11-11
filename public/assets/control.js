@@ -319,10 +319,27 @@ function fillForm() {
   renderAds(true);
   fillPlayerPicker();
   renderLineupBuilders();
+  renderTeamTags();
   renderBaseControl();
   renderCount();
   renderNdiButtons();
 }
+
+// Nombre, logo y color del equipo elegido en los titulos de Rosters y Line up.
+function renderTeamTags() {
+  for (const tag of document.querySelectorAll("[data-team-tag]")) {
+    const side = tag.dataset.teamTag;
+    const nameField = document.querySelector(`[data-path="match.teams.${side}.name"]`);
+    const team = state?.match?.teams?.[side] || {};
+    const name = (nameField?.value ?? team.name ?? "").trim();
+    const players = (state?.excel?.[side] || []).filter(row => String(row.name || "").trim() && !staffRole.test(String(row.role || ""))).length;
+    tag.style.setProperty("--tag-color", team.color || "#4b535c");
+    tag.innerHTML = name
+      ? `${team.logo ? `<img src="${escAttr(team.logo)}" alt="">` : ""}<b>${escAttr(name)}</b>${players ? `<small>${players} jugadores</small>` : ""}`
+      : `<b>sin equipo</b>`;
+  }
+}
+document.querySelectorAll('[data-path="match.teams.home.name"], [data-path="match.teams.away.name"]').forEach(field => field.addEventListener("input", renderTeamTags));
 
 function renderLogoPreview(field) {
   if (!field.dataset.path.endsWith(".logo")) return;

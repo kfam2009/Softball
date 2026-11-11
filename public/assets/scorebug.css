@@ -2626,3 +2626,10 @@ textarea {
   .tabs { flex-wrap: wrap; }
   .tab-btn { flex: 0 0 auto; }
 }
+
+/* Equipo elegido en los titulos de Rosters y Line up */
+.team-tag { display: inline-flex; align-items: center; gap: 8px; margin-left: 10px; padding: 3px 12px 3px 4px; border-radius: 999px;
+  background: #1f2830; color: #fff; font-size: 15px; vertical-align: middle; border-left: 6px solid var(--tag-color, #4b535c); }
+.team-tag img { width: 26px; height: 26px; object-fit: contain; background: #f7f3ea; border-radius: 6px; padding: 2px; }
+.team-tag b { font-weight: 900; letter-spacing: .5px; }
+.team-tag small { color: #9fb0bd; font-weight: 700; font-size: 12px; }
