@@ -83,6 +83,7 @@ Además de HOME y AWAY, el Excel puede tener **una hoja por equipo** con el **mi
 - **Juego y gráficos**: Ball, Strike, Foul, Out, Carrera, Hit, Error, Cambio de lado, bases, Conteo 0-0, Deshacer, Scorebug / Zócalo / Publicidad In-Out.
 
 ## Domos (PTZ)
+- **Accesos rápidos** (arriba de la pestaña Domos): cada domo con botones **Pos 1** y **Pos 2** que la llevan directo a esa posición guardada, sin elegir la cámara antes.
 - Pestaña **Domos**: lista de cámaras (nombre, marca, IP, puerto, usuario, clave) con **+ Cámara / Eliminar / Guardar cámara / Probar**. Se guardan por PC en `data/domos.json` (no se sube al GitHub; la clave no vuelve al navegador, se muestra `••••`).
 - Pad de 8 flechas + **■** (frenar) y **Zoom + / −**: mantener apretado para mover, soltar para parar. Un toque corto mueve un **paso** (Corto / Medio / Largo).
 - **Posiciones guardadas** 1–6 por cámara: "Guardar acá" graba la posición actual, "Ir a" la recupera (en Foscam son los presets PG1–PG6).

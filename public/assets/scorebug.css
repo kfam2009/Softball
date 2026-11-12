@@ -2633,3 +2633,15 @@ textarea {
 .team-tag img { width: 26px; height: 26px; object-fit: contain; background: #f7f3ea; border-radius: 6px; padding: 2px; }
 .team-tag b { font-weight: 900; letter-spacing: .5px; }
 .team-tag small { color: #9fb0bd; font-weight: 700; font-size: 12px; }
+
+/* Domos: accesos rapidos */
+.dom-quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.dom-quick-cam { display: flex; align-items: center; gap: 10px; background: #1f2830; border-radius: 12px; padding: 10px 12px; }
+.dom-quick-name { flex: 1; color: #fff; font-weight: 900; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dom-quick-btn {
+  min-width: 92px; height: 56px; border: 0; border-radius: 10px; cursor: pointer;
+  background: var(--teal); color: #fff; font-weight: 900; font-size: 19px; letter-spacing: .5px;
+}
+.dom-quick-btn:hover { filter: brightness(1.15); }
+.dom-quick-btn.act { background: var(--gold); color: #10151b; transform: translateY(1px); }
+#dom-quick-msg { font-size: 14px; margin-left: 10px; }

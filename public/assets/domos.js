@@ -10,6 +10,10 @@
 
   root.innerHTML = `
     <section class="card wide">
+      <h2>Accesos rápidos <span class="dom-msg" id="dom-quick-msg"></span></h2>
+      <div class="dom-quick" id="dom-quick"></div>
+    </section>
+    <section class="card wide">
       <h2>Domos (PTZ)</h2>
       <div class="dom-row">
         <label class="dom-grow">Cámara <select id="dom-sel"></select></label>
@@ -114,7 +118,36 @@
 
   const camara = () => state.lista[state.sel];
 
+  // Accesos rapidos: cada domo con Pos 1 y Pos 2 (van directo, sin elegir la camara).
+  function renderQuick() {
+    const box = $("#dom-quick");
+    box.innerHTML = state.lista.length
+      ? state.lista.map((c, i) => `
+        <div class="dom-quick-cam">
+          <span class="dom-quick-name">${html(c.nombre || `Domo ${i + 1}`)}</span>
+          ${[1, 2].map(n => `<button type="button" class="dom-quick-btn" data-quick-cam="${i}" data-quick-pos="${n}">Pos ${n}</button>`).join("")}
+        </div>`).join("")
+      : `<p class="dom-hint">Agregá los domos abajo y guardá en cada uno las posiciones 1 y 2.</p>`;
+    box.querySelectorAll("[data-quick-cam]").forEach(button => button.addEventListener("click", async () => {
+      const i = Number(button.dataset.quickCam), n = Number(button.dataset.quickPos);
+      const nombre = state.lista[i]?.nombre || `Domo ${i + 1}`;
+      const el = $("#dom-quick-msg");
+      button.classList.add("act");
+      try {
+        await post("/api/domo/preset", { idx: i, accion: "ir", n });
+        el.textContent = `${nombre} → posición ${n}`;
+        el.classList.remove("error");
+      } catch (error) {
+        el.textContent = `${nombre}: ${error.message}`;
+        el.classList.add("error");
+      } finally {
+        setTimeout(() => button.classList.remove("act"), 400);
+      }
+    }));
+  }
+
   function render() {
+    renderQuick();
     const sel = $("#dom-sel");
     sel.innerHTML = state.lista.length
       ? state.lista.map((c, i) => `<option value="${i}" ${i === state.sel ? "selected" : ""}>${html(c.nombre || `Domo ${i + 1}`)}</option>`).join("")
