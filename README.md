@@ -93,6 +93,13 @@ Además de HOME y AWAY, el Excel puede tener **una hoja por equipo** con el **mi
 - Marcas: **Foscam** (API CGI, puerto por defecto 88) y **Longse / otras ONVIF** (ContinuousMove / Stop / SetPreset / GotoPreset, foto por GetSnapshotUri; el puerto es el del servicio ONVIF, no el 554 del video). **Buscar cámaras en la red** encuentra las cámaras ONVIF (WS-Discovery) y prueba los puertos típicos de la IP cargada; "Usar este puerto" lo corrige. La señal WiFi solo la informa Foscam.
 - El panel (la PC) le manda los comandos a la IP de la cámara: tiene que llegar por la red local o ZeroTier.
 
+## Igualar colores (pestaña Color)
+El panel le pide a vMix una foto de cada cámara (`SnapshotInput`), mide el color de una zona neutra y ajusta la **Corrección de color** de cada input (`SetCCGainR/G/B`, 0–2, 1 = sin cambio) para que se parezca a la cámara patrón. No toca Lift, Gamma ni Saturación. vMix tiene que estar en la misma PC que el panel.
+1. Poner algo neutro que vean todas las cámaras (cartulina gris o blanca, una base, la línea de cal).
+2. **Sacar fotos y medir** y, en cada foto, arrastrar un rectángulo sobre esa zona.
+3. **Igualar con la patrón** (primero pone Gain en 1, mide de nuevo y aplica). **Verificar** saca fotos nuevas: "vs patrón" cerca de 0 % = igualada. **Restablecer** vuelve todo a Gain 1.
+Conviene balance de blancos fijo en las cámaras y repetirlo si cambia la luz.
+
 ## Celular (solo scorebug)
 Desde un celular en la misma red (WiFi o **ZeroTier**) abrir `http://IP-DE-LA-PC:8136/m`. En el panel de la PC, arriba a la derecha, aparece la dirección (la de ZeroTier primero); tocándola muestra un **QR** para escanear. La página del celular muestra el nombre de la PC a la que está conectada, así no se confunde si hay dos PCs con el panel en la misma red.
 Botones: Ball, Strike, Foul, Out, Carrera, Hit, Base por bolas, Conteo 0-0, Error, Cambio de lado, Limpiar bases, **Deshacer**, Scorebug In/Out, bases tocando el diamante y correcciones.

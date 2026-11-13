@@ -2645,3 +2645,19 @@ textarea {
 .dom-quick-btn:hover { filter: brightness(1.15); }
 .dom-quick-btn.act { background: var(--gold); color: #10151b; transform: translateY(1px); }
 #dom-quick-msg { font-size: 14px; margin-left: 10px; }
+
+/* ---------- Igualar colores ---------- */
+.cc-form { margin: 10px 0; }
+.cc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; margin-top: 10px; }
+.cc-cam { background: var(--paper); border-radius: 12px; padding: 10px; border: 3px solid transparent; }
+.cc-cam.ref { border-color: var(--gold); }
+.cc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; color: #10151b; }
+.cc-badge { background: var(--gold); color: #10151b; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 999px; }
+.cc-pic { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; cursor: crosshair; touch-action: none; display: grid; place-items: center; color: #c9d1d9; font-weight: 700; }
+.cc-pic img { width: 100%; height: 100%; object-fit: contain; user-select: none; pointer-events: none; }
+.cc-box { position: absolute; display: none; border: 2px dashed #00e0b8; background: rgba(0, 224, 184, .15); pointer-events: none; }
+.cc-swatch { height: 18px; border-radius: 6px; margin: 8px 0 4px; border: 1px solid rgba(0,0,0,.2); }
+.cc-stats, .cc-gain, .cc-diff { font-size: 13px; font-weight: 700; color: #10151b; }
+.cc-diff { color: #a85d00; }
+.cc-gain { color: #4b535c; }
+.cc-stats .error { color: #c62828; }

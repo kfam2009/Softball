@@ -9,3 +9,4 @@ scripts/streamdeck/shortcuts-exe/
 /data/config.json
 /data/midi.json
 data/domos.json
+data/cc/

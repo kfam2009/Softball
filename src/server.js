@@ -1196,6 +1196,48 @@ function createServer() {
       return;
     }
 
+    // ---------- Igualar colores: fotos de las camaras sacadas por vMix ----------
+    if (req.method === "POST" && url.pathname === "/api/cc/snapshot") {
+      let raw = "";
+      req.on("data", chunk => raw += chunk);
+      req.on("end", async () => {
+        try {
+          const { host } = vmixSettings();
+          if (!/^(127\.0\.0\.1|localhost)$/i.test(host)) throw new Error("Para sacar fotos de las cámaras, vMix tiene que estar en esta misma PC.");
+          const inputs = (JSON.parse(raw || "{}").inputs || []).map(String).filter(v => /^\d{1,3}$/.test(v)).slice(0, 8);
+          if (!inputs.length) throw new Error("Elegí los inputs de las cámaras.");
+          const dir = path.join(root, "data", "cc");
+          fs.mkdirSync(dir, { recursive: true });
+          for (const file of fs.readdirSync(dir)) { try { fs.unlinkSync(path.join(dir, file)); } catch {} }
+          const stamp = Date.now();
+          const results = [];
+          for (const input of inputs) {
+            const file = path.join(dir, `input${input}-${stamp}.jpg`);
+            const res = await vmixCall({ Function: "SnapshotInput", Input: input, Value: file });
+            if (res.status !== 200) { results.push({ input, error: `vMix no sacó la foto del input ${input}` }); continue; }
+            // vMix guarda el archivo un instante despues: esperar a que exista y deje de crecer.
+            let ok = false, last = -1;
+            for (let i = 0; i < 40 && !ok; i++) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+              try { const size = fs.statSync(file).size; ok = size > 0 && size === last; last = size; } catch {}
+            }
+            results.push(ok ? { input, url: `/cc/${path.basename(file)}` } : { input, error: `No llegó la foto del input ${input}` });
+          }
+          sendJson(res, { ok: true, results });
+        } catch (error) {
+          sendJson(res, { ok: false, error: error.message }, 400);
+        }
+      });
+      return;
+    }
+    if (req.method === "GET" && url.pathname.startsWith("/cc/")) {
+      const name = path.basename(decodeURIComponent(url.pathname.slice(4)));
+      const file = path.join(root, "data", "cc", name);
+      if (!/^input\d+-\d+\.jpg$/.test(name) || !fs.existsSync(file)) { res.writeHead(404); return res.end(); }
+      res.writeHead(200, { "Content-Type": "image/jpeg", "Cache-Control": "no-store" });
+      return fs.createReadStream(file).pipe(res);
+    }
+
     if (req.method === "POST" && url.pathname === "/api/replay-speed") {
       let raw = "";
       req.on("data", chunk => raw += chunk);
