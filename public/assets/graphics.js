@@ -243,6 +243,45 @@ function renderMatchup(state) {
   `;
 }
 
+// Grafico CAMPEON (mismo estilo que el Matchup: cinta teal-dorado, panel oscuro, pie dorado).
+function renderChampion(state) {
+  const c = state.champion || {};
+  const color = c.color || "#00a78e";
+  const palette = ["var(--gold)", color, "#ffffff", "var(--teal)", "#fff1a8"];
+  const confetti = Array.from({ length: 46 }, (_, i) => {
+    const x = (i * 37) % 100, d = (i * 0.37) % 4, t = 3.2 + (i % 7) * 0.45, r = (i * 53) % 360, w = 8 + (i % 4) * 4;
+    return `<i style="--x:${x}%;--d:${d.toFixed(2)}s;--t:${t.toFixed(2)}s;--r:${r}deg;--w:${w}px;--c:${palette[i % palette.length]}"></i>`;
+  }).join("");
+  const logo = c.logo
+    ? `<img src="${esc(assetSrc(c.logo))}" alt="">`
+    : `<b>${esc(c.short || (c.name || "").slice(0, 3))}</b>`;
+  const trophy = `
+    <svg viewBox="0 0 120 140" aria-hidden="true">
+      <defs><linearGradient id="champGold" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#fff6c9"/><stop offset=".45" stop-color="#ffc83d"/><stop offset="1" stop-color="#d98a00"/></linearGradient></defs>
+      <path fill="url(#champGold)" d="M30 8h60v10h20c0 26-12 40-28 44-4 10-10 16-16 18v14h14c6 0 10 4 10 10v8H30v-8c0-6 4-10 10-10h14V80c-6-2-12-8-16-18C22 58 10 44 10 18h20zm-10 20c2 14 8 22 14 26-2-7-3-16-4-26zm80 0H90c-1 10-2 19-4 26 6-4 12-12 14-26z"/>
+      <rect x="34" y="122" width="52" height="12" rx="3" fill="url(#champGold)"/>
+    </svg>`;
+  return `
+    <section class="champ-card" style="--team:${esc(color)}">
+      <div class="champ-confetti">${confetti}</div>
+      <div class="champ-ribbon">
+        <span>${esc(c.subtitle || state.event.name || "")}</span>
+        <strong>${esc(c.title || "CAMPEÓN")}</strong>
+      </div>
+      <div class="champ-main">
+        <div class="champ-logo-wrap"><div class="champ-rays"></div><div class="champ-logo">${logo}</div></div>
+        <div class="champ-text">
+          ${c.short ? `<div class="champ-short">${esc(c.short)}</div>` : ""}
+          <div class="champ-name">${esc(c.name || "")}<i class="champ-shine"></i></div>
+          ${c.final ? `<div class="champ-final"><span>FINAL</span>${esc(c.final)}</div>` : ""}
+        </div>
+        <div class="champ-trophy">${trophy}</div>
+      </div>
+      <footer class="champ-footer"><span>${esc(c.note || "")}</span><span>${esc(state.event.name || "")}</span></footer>
+    </section>
+  `;
+}
+
 function parseRows(text) {
   return String(text || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => {
     const parts = line.split(/\s{2,}/).filter(Boolean);
@@ -495,6 +534,7 @@ const renderers = {
   scorebug: renderScorebug,
   scoreboard: renderScoreboard,
   matchup: renderMatchup,
+  champion: renderChampion,
   rosterAway: state => renderRoster(state, "away"),
   rosterHome: state => renderRoster(state, "home"),
   umpires: renderUmpires,

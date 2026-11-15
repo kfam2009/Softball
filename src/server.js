@@ -130,6 +130,11 @@ function normalizeState(state) {
   }
   state.scoreboard ||= { title: "LINE SCORE", subtitle: state.event.name };
   state.matchup ||= { title: "MATCHUP", subtitle: state.event.name, round: "Fase de grupos", venue: "", titleScale: 1 };
+  // Grafico CAMPEON del torneo
+  state.champion ||= {};
+  for (const [k, v] of Object.entries({ title: "CAMPEÓN", subtitle: state.event.name || "", name: "", short: "", color: "#00a78e", logo: "", final: "", note: "" })) {
+    if (state.champion[k] === undefined || state.champion[k] === null) state.champion[k] = v;
+  }
   state.rosters ||= { title: "TEAM ROSTER", subtitle: state.event.name, away: { playersText: "" }, home: { playersText: "" } };
   state.rosters.away ||= { playersText: "" };
   state.rosters.home ||= { playersText: "" };

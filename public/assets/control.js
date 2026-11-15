@@ -19,6 +19,7 @@ const graphics = {
   scorebug: { label: "Scorebug" },
   scoreboard: { label: "Scoreboard" },
   matchup: { label: "Matchup" },
+  champion: { label: "Campeón" },
   rosterAway: { label: "Away Roster" },
   rosterHome: { label: "Home Roster" },
   umpires: { label: "Umpires" },
@@ -35,6 +36,7 @@ const tabPreviewGraphic = {
   scorebug: "scorebug",
   scoreboard: "scoreboard",
   matchup: "matchup",
+  champion: "champion",
   rosters: "rosterHome",
   umpires: "umpires",
   player: "player",
@@ -95,7 +97,29 @@ function resolveLogo(value) {
   return match ? match.value : "";
 }
 
+function fillChampionPreset() {
+  const select = document.getElementById("champ-preset");
+  if (!select) return;
+  const teams = teamCatalog();
+  const current = state?.champion?.name || "";
+  select.innerHTML = `<option value="">${teams.length ? "Elegir equipo…" : "Sin hoja EQUIPOS en el Excel"}</option>` +
+    teams.map((team, index) => `<option value="${index}" ${team.name === current ? "selected" : ""}>${escAttr(team.name)}${team.short ? ` (${escAttr(team.short)})` : ""}</option>`).join("");
+}
+
+function setChampion(team) {
+  if (!team) return;
+  readForm();
+  state.champion ||= {};
+  state.champion.name = team.name || "";
+  state.champion.short = team.short || "";
+  if (/^#[0-9a-f]{3,6}$/i.test(team.color || "")) state.champion.color = team.color;
+  state.champion.logo = team.logo ? (resolveLogo(team.logo) || team.logo) : "";
+  fillForm();
+  scheduleSave();
+}
+
 function fillTeamPresetSelects() {
+  fillChampionPreset();
   const teams = teamCatalog();
   document.querySelectorAll("[data-team-preset]").forEach(select => {
     const side = select.dataset.teamPreset;
@@ -165,6 +189,12 @@ document.getElementById("logos-clear")?.addEventListener("click", () => {
 });
 
 document.querySelectorAll("[data-team-preset]").forEach(select => select.addEventListener("change", () => applyTeamPreset(select.dataset.teamPreset, select.value)));
+document.getElementById("champ-preset")?.addEventListener("change", event => {
+  const team = teamCatalog()[Number(event.target.value)];
+  if (team) setChampion({ ...team, logo: resolveLogo(team.logo) });
+});
+document.getElementById("champ-home")?.addEventListener("click", () => setChampion(state.match.teams.home));
+document.getElementById("champ-away")?.addEventListener("click", () => setChampion(state.match.teams.away));
 document.querySelectorAll("[data-logo-upload]").forEach(button => button.addEventListener("click", event => {
   event.preventDefault();
   uploadLogo(button.dataset.logoUpload);

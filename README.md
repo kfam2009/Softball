@@ -93,6 +93,9 @@ Además de HOME y AWAY, el Excel puede tener **una hoja por equipo** con el **mi
 - Marcas: **Foscam** (API CGI, puerto por defecto 88) y **Longse / otras ONVIF** (ContinuousMove / Stop / SetPreset / GotoPreset, foto por GetSnapshotUri; el puerto es el del servicio ONVIF, no el 554 del video). **Buscar cámaras en la red** encuentra las cámaras ONVIF (WS-Discovery) y prueba los puertos típicos de la IP cargada; "Usar este puerto" lo corrige. La señal WiFi solo la informa Foscam.
 - El panel (la PC) le manda los comandos a la IP de la cámara: tiene que llegar por la red local o ZeroTier.
 
+## Campeón (pestaña Campeón)
+Gráfico de pantalla completa para el campeón del torneo, con el mismo estilo del Matchup: cinta "CAMPEÓN" con el nombre del torneo, logo grande con rayos, nombre del equipo en dorado, resultado de la final (opcional), trofeo y papelitos animados. Elegir el equipo (Excel) o "Usar Home / Away" y tocar **In** / **Out** (y **Monitor** para verlo antes).
+
 ## Igualar colores (pestaña Color)
 El panel le pide a vMix una foto de cada cámara (`SnapshotInput`), mide el color de una zona neutra y ajusta la **Corrección de color** de cada input (`SetCCGainR/G/B`, 0–2, 1 = sin cambio) para que se parezca a la cámara patrón. No toca Lift, Gamma ni Saturación. vMix tiene que estar en la misma PC que el panel.
 1. Poner algo neutro que vean todas las cámaras (cartulina gris o blanca, una base, la línea de cal).
